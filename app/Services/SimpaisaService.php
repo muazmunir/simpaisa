@@ -164,24 +164,20 @@ class SimpaisaService
         $tokenizedType = config('simpaisa.transaction_types.tokenized_alt', '9');
         $isTokenized = ($data['transactionType'] ?? '') === $tokenizedType;
         
-        // Normalize transactionType - Simpaisa might expect 2-digit format
-        // "0" -> "00", "1" -> "01", etc. (except "9" which stays as "9")
+        // Keep transactionType as-is (Simpaisa expects "0" not "00" based on error response)
         $transactionType = $data['transactionType'] ?? '';
-        if (!$isTokenized && strlen($transactionType) === 1 && is_numeric($transactionType)) {
-            $transactionType = '0' . $transactionType; // "0" -> "00", "1" -> "01"
-        }
         
-        // Convert amount to string (paisa) - Simpaisa API expects amount as string in smallest currency unit
+        // Convert amount to integer (paisa) - Simpaisa API expects amount in smallest currency unit
         // 100 PKR = 10000 paisa
-        // Response shows amount as string, so sending as string might be required
+        // Keep as integer (not string) - JSON will serialize it correctly
         $amount = null;
         if (!$isTokenized) {
-            // Regular transactions: convert amount to paisa (as string)
-            $amount = isset($data['amount']) ? (string) round($data['amount'] * 100) : null;
+            // Regular transactions: convert amount to paisa
+            $amount = isset($data['amount']) ? (int) round($data['amount'] * 100) : null;
         } else {
             // Tokenized transactions: only include amount if productId is not provided
             if (empty($data['productId'] ?? null) && isset($data['amount'])) {
-                $amount = (string) round($data['amount'] * 100);
+                $amount = (int) round($data['amount'] * 100);
             }
         }
         
@@ -189,7 +185,7 @@ class SimpaisaService
             'merchantId' => $data['merchantId'],
             'operatorId' => $data['operatorId'],
             'userKey' => $data['userKey'] ?? null,
-            'transactionType' => $transactionType, // Use normalized transactionType
+            'transactionType' => $transactionType, // Keep original format
             'msisdn' => $data['msisdn'],
             'productReference' => (!$isTokenized) ? ($data['productReference'] ?? null) : null,
             'amount' => $amount,
