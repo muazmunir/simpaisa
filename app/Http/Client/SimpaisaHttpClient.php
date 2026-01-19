@@ -93,9 +93,15 @@ class SimpaisaHttpClient
             // For wallet transactions, mode might need to be different
             // Check if this is a wallet transaction endpoint
             if (strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false) {
-                // Wallet transactions might need different mode
-                // Try 'payment' instead of 'payout' (payout is for disbursements)
-                $headers['mode'] = 'payment'; // Changed from 'wallet' to 'payment'
+                // Try removing mode header or using different values
+                // Option 1: Remove mode header (comment out to try)
+                // unset($headers['mode']);
+                
+                // Option 2: Try 'wallet' mode
+                $headers['mode'] = 'wallet';
+                
+                // Option 3: Try keeping 'payout' (uncomment if needed)
+                // $headers['mode'] = 'payout';
             }
             
             // Log the request with full details for debugging
