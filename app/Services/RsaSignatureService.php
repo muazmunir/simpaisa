@@ -23,8 +23,18 @@ class RsaSignatureService
                 $privateKeyPath = config('simpaisa.rsa.private_key_path');
             }
 
+            // Resolve relative paths to absolute paths
+            if (!empty($privateKeyPath) && !str_starts_with($privateKeyPath, '/')) {
+                // If path is relative, resolve it relative to storage_path
+                if (str_starts_with($privateKeyPath, 'storage/')) {
+                    $privateKeyPath = storage_path(str_replace('storage/', '', $privateKeyPath));
+                } else {
+                    $privateKeyPath = storage_path($privateKeyPath);
+                }
+            }
+            
             if (empty($privateKeyPath) || !file_exists($privateKeyPath)) {
-                throw new \Exception('RSA private key file not found: ' . $privateKeyPath);
+                throw new \Exception('RSA private key file not found: ' . $privateKeyPath . ' (resolved from: ' . config('simpaisa.rsa.private_key_path') . ')');
             }
 
             // Read private key
@@ -84,6 +94,20 @@ class RsaSignatureService
                 $publicKeyPath = config('simpaisa.rsa.simpaisa_public_key_path');
             }
 
+            // Resolve relative paths to absolute paths
+            if (!empty($publicKeyPath)) {
+                // If path doesn't start with /, it might be relative
+                if (!str_starts_with($publicKeyPath, '/')) {
+                    // Check if it starts with 'storage/' and resolve it
+                    if (str_starts_with($publicKeyPath, 'storage/')) {
+                        $publicKeyPath = storage_path(str_replace('storage/', '', $publicKeyPath));
+                    } else {
+                        // Try to resolve as storage path
+                        $publicKeyPath = storage_path($publicKeyPath);
+                    }
+                }
+            }
+            
             if (empty($publicKeyPath) || !file_exists($publicKeyPath)) {
                 // In development/testing, if key file is missing, throw exception
                 // so middleware can handle it gracefully

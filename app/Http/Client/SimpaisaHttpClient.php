@@ -68,11 +68,21 @@ class SimpaisaHttpClient
                 $signature = $this->rsaService->signRequest($data);
                 $data['signature'] = $signature;
             } catch (\Exception $e) {
-                Log::error('Failed to sign request', [
-                    'error' => $e->getMessage(),
-                    'endpoint' => $endpoint
-                ]);
-                throw new \Exception('Failed to sign API request: ' . $e->getMessage());
+                // In development, if key file is missing, log warning but continue
+                if (app()->environment(['local', 'testing']) && 
+                    (strpos($e->getMessage(), 'not found') !== false || strpos($e->getMessage(), 'file not found') !== false)) {
+                    Log::warning('RSA key file not found in development mode. Request will be sent without signature.', [
+                        'error' => $e->getMessage(),
+                        'endpoint' => $endpoint
+                    ]);
+                    // Continue without signature in development
+                } else {
+                    Log::error('Failed to sign request', [
+                        'error' => $e->getMessage(),
+                        'endpoint' => $endpoint
+                    ]);
+                    throw new \Exception('Failed to sign API request: ' . $e->getMessage());
+                }
             }
         }
 
