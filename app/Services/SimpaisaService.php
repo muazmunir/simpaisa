@@ -163,17 +163,11 @@ class SimpaisaService
         // Convert amount to integer (paisa) if provided - payment APIs typically use smallest currency unit
         $amount = isset($data['amount']) ? (int) round($data['amount'] * 100) : null;
         
-        // Normalize transactionType - ensure it's 2 digits (e.g., "0" -> "00")
-        $transactionType = $data['transactionType'];
-        if (strlen($transactionType) === 1) {
-            $transactionType = '0' . $transactionType;
-        }
-        
         $requestData = array_filter([
             'merchantId' => $data['merchantId'],
             'operatorId' => $data['operatorId'],
             'userKey' => $data['userKey'] ?? null,
-            'transactionType' => $transactionType,
+            'transactionType' => $data['transactionType'],
             'msisdn' => $data['msisdn'],
             'productReference' => $data['productReference'] ?? null,
             'amount' => $amount,

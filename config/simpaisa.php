@@ -100,10 +100,10 @@ return [
     */
 
     'transaction_types' => [
-        'one_time' => '00',
-        'recurring' => '01',
-        'tokenized' => '02',
-        'tokenized_alt' => '9',
+        'one_time' => '0',      // One-time charge
+        'recurring' => '01',    // Recurring payment
+        'tokenized' => '02',    // Tokenized payment
+        'tokenized_alt' => '9', // Tokenized payment (alternative)
     ],
 
     /*
