@@ -2,16 +2,18 @@
 
 namespace App\Services;
 
+use App\Http\Client\SimpaisaHttpClient;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class SimpaisaService
 {
-    public function __construct()
+    protected SimpaisaHttpClient $httpClient;
+
+    public function __construct(SimpaisaHttpClient $httpClient)
     {
-        // Service initialization
-        // Configuration can be accessed via config() helper when needed
+        $this->httpClient = $httpClient;
     }
 
     /**
@@ -84,7 +86,7 @@ class SimpaisaService
             // TODO: Send OTP to customer's mobile wallet number
             // TODO: Store transaction in database
             
-            // Simulate successful initiation
+            // Call Simpaisa API to initiate transaction
             // In production, this should call the actual payment gateway API
             $result = $this->processTransactionInitiation($data, $transactionId);
 
@@ -157,17 +159,23 @@ class SimpaisaService
         // 6. Store transaction details in database (including CNIC for HBL Konnect, accountNumber for Alfa, productId for tokenization)
         // 7. Return appropriate response
 
-        // For now, return success response
-        // In production, replace this with actual API call
-        // The OTP is sent by the wallet itself after successful initiation
-        return [
-            'status' => '0000',
-            'message' => 'Success',
-            'msisdn' => $data['msisdn'],
-            'operatorId' => $data['operatorId'],
+        // Call Simpaisa API to initiate transaction
+        $requestData = array_filter([
             'merchantId' => $data['merchantId'],
-            'transactionId' => $transactionId,
-        ];
+            'operatorId' => $data['operatorId'],
+            'userKey' => $data['userKey'] ?? null,
+            'transactionType' => $data['transactionType'],
+            'msisdn' => $data['msisdn'],
+            'productReference' => $data['productReference'] ?? null,
+            'amount' => $data['amount'] ?? null,
+            'productId' => $data['productId'] ?? null,
+            'cnic' => $data['cnic'] ?? null,
+            'accountNumber' => $data['accountNumber'] ?? null,
+        ], fn($value) => $value !== null);
+
+        $response = $this->httpClient->post('api/wallets/transaction/initiate', $requestData);
+        
+        return $response;
     }
 
     /**
@@ -178,9 +186,9 @@ class SimpaisaService
      */
     protected function validateMerchant(string $merchantId): bool
     {
-        // TODO: Implement merchant validation logic
-        // Check if merchant exists in database and is active
-        return true; // Placeholder
+        // Merchant validation - check against configured merchant ID
+        $configuredMerchantId = config('simpaisa.merchant_id');
+        return !empty($configuredMerchantId) && $merchantId === $configuredMerchantId;
     }
 
     /**
@@ -358,26 +366,21 @@ class SimpaisaService
         // 7. Update transaction status in database
         // 8. Return appropriate response
 
-        // For now, return success response
-        // In production, replace this with actual API call
-        // The transactionId should be retrieved from the initiated transaction
-        $transactionId = $this->getTransactionId($data);
-        
-        $response = [
-            'status' => '0000',
-            'message' => 'Success',
-            'msisdn' => $data['msisdn'],
-            'operatorId' => $data['operatorId'],
+        // Call Simpaisa API to verify transaction
+        $requestData = array_filter([
             'merchantId' => $data['merchantId'],
-            'transactionId' => $transactionId,
-        ];
+            'operatorId' => $data['operatorId'],
+            'userKey' => $data['userKey'] ?? null,
+            'transactionId' => $data['transactionId'] ?? null,
+            'otp' => $data['otp'],
+            'msisdn' => $data['msisdn'],
+            'transactionType' => $data['transactionType'] ?? null,
+            'cnic' => $data['cnic'] ?? null,
+            'accountNumber' => $data['accountNumber'] ?? null,
+        ], fn($value) => $value !== null);
 
-        // For tokenized payments, include sourceId in response
-        $tokenizedType = config('simpaisa.transaction_types.tokenized_alt', '9');
-        if (($data['transactionType'] ?? '') === $tokenizedType) {
-            $response['sourceId'] = $this->generateSourceId($data);
-        }
-
+        $response = $this->httpClient->post('api/wallets/transaction/verify', $requestData);
+        
         return $response;
     }
 
@@ -396,8 +399,8 @@ class SimpaisaService
         // 3. Verify OTP hasn't expired (typically 5-10 minutes)
         // 4. Check if transaction is in pending state
         
-        // For now, return true as placeholder
-        // In production, implement actual OTP verification
+        // OTP verification is handled by Simpaisa API during verify transaction call
+        // This method is kept for backward compatibility but actual verification happens in API
         return true;
     }
 
@@ -416,8 +419,9 @@ class SimpaisaService
         // This should query the database using userKey, msisdn, merchantId
         // to find the initiated transaction and return its transactionId
         
-        // For now, generate a new one (this should be retrieved from database)
-        return $this->generateTransactionId();
+        // Transaction ID comes from Simpaisa API response
+        // This method is kept for backward compatibility
+        return $data['transactionId'] ?? $this->generateTransactionId();
     }
 
     /**
@@ -448,8 +452,9 @@ class SimpaisaService
         // 3. Format: sp_ followed by alphanumeric characters
         // 4. In production, this should be generated by the payment gateway API
         
-        // For now, generate a placeholder sourceId
-        // Format: sp_ + 16 alphanumeric characters
+        // SourceId is generated by Simpaisa API and returned in response
+        // This method is kept for backward compatibility
+        // In production, sourceId comes from Simpaisa API response
         $token = Str::lower(Str::random(16));
         return 'sp_' . $token;
     }
@@ -539,25 +544,25 @@ class SimpaisaService
         // 5. Update transaction status in database
         // 6. Return appropriate response
 
-        // Generate transaction ID
-        $transactionId = $this->generateTransactionId();
-
-        // For now, simulate successful direct charge
-        $result = [
-            'status' => '0000',
-            'message' => 'Success',
-            'operatorId' => $data['operatorId'],
+        // Call Simpaisa API for direct charge
+        $requestData = array_filter([
             'merchantId' => $data['merchantId'],
+            'operatorId' => $data['operatorId'],
             'sourceId' => $data['sourceId'],
-            'transactionId' => $transactionId,
-        ];
+            'productId' => $data['productId'] ?? null,
+            'userKey' => $data['userKey'] ?? null,
+            'transactionType' => $data['transactionType'] ?? null,
+            'amount' => $data['amount'] ?? null,
+        ], fn($value) => $value !== null);
+
+        $response = $this->httpClient->post('api/wallets/transaction/direct-charge', $requestData);
 
         // Log the response
         Log::info('Simpaisa Direct Charge Response', [
-            'response' => $result
+            'response' => $response
         ]);
 
-        return $result;
+        return $response;
     }
 
     /**
@@ -578,29 +583,21 @@ class SimpaisaService
         // 4. Update transaction status in database
         // 5. Return appropriate response with sourceId
 
-        // For now, simulate successful finalization
-        $transactionId = $this->getTransactionIdByOrderId($data['orderId']);
-        $msisdn = $this->getMsisdnByOrderId($data['orderId']);
-
-        // Generate sourceId for tokenized payments
-        $sourceId = $this->generateSourceId($data);
-
-        $result = [
-            'status' => '0000',
-            'message' => 'Success',
-            'msisdn' => $msisdn,
-            'operatorId' => $data['operatorId'],
+        // Call Simpaisa API to finalize transaction
+        $requestData = array_filter([
             'merchantId' => $data['merchantId'],
-            'sourceId' => $sourceId,
-            'transactionId' => $transactionId,
-        ];
+            'operatorId' => $data['operatorId'],
+            'orderId' => $data['orderId'],
+        ], fn($value) => $value !== null);
+
+        $response = $this->httpClient->post('api/wallets/transaction/finalize', $requestData);
 
         // Log the response
         Log::info('Simpaisa Finalize Transaction Response', [
-            'response' => $result
+            'response' => $response
         ]);
 
-        return $result;
+        return $response;
     }
 
     /**
@@ -617,7 +614,8 @@ class SimpaisaService
         // This should query the database using orderId to find the transaction
         // and return its transactionId
         
-        // For now, generate a placeholder (this should be retrieved from database)
+        // Transaction ID comes from Simpaisa API
+        // This method is kept for backward compatibility
         return $this->generateTransactionId();
     }
 
@@ -631,11 +629,8 @@ class SimpaisaService
      */
     protected function getMsisdnByOrderId(string $orderId): string
     {
-        // TODO: Implement logic to retrieve MSISDN from database
-        // This should query the database using orderId to find the transaction
-        // and return the customer's MSISDN
-        
-        // For now, return placeholder (this should be retrieved from database)
+        // MSISDN comes from Simpaisa API response
+        // This method is kept for backward compatibility
         return '';
     }
 
@@ -685,21 +680,21 @@ class SimpaisaService
             // 4. Mark sourceId as inactive/deleted in database
             // 5. Return appropriate response
 
-            // For now, simulate successful delink
-            $result = [
-                'status' => '0000',
-                'message' => 'Success',
-                'operatorId' => $data['operatorId'],
+            // Call Simpaisa API to delink account
+            $requestData = array_filter([
                 'merchantId' => $data['merchantId'],
+                'operatorId' => $data['operatorId'],
                 'sourceId' => $data['sourceId'],
-            ];
+            ], fn($value) => $value !== null);
+
+            $response = $this->httpClient->post('api/wallets/transaction/delink', $requestData);
 
             // Log the response
             Log::info('Simpaisa Delink Account Response', [
-                'response' => $result
+                'response' => $response
             ]);
 
-            return $result;
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Delink Account Error', [
@@ -749,26 +744,21 @@ class SimpaisaService
             // 2. Check transaction status from payment gateway
             // 3. Return transaction details with status
 
-            // For now, simulate transaction retrieval
-            $transactionId = $data['transactionId'] ?? $this->getTransactionIdByUserKey($data['userKey'] ?? '');
-            $userKey = $data['userKey'] ?? $this->getUserKeyByTransactionId($transactionId);
-
-            // Retrieve transaction details (this should come from database)
-            $transaction = $this->getTransactionDetails($transactionId, $userKey, $data['merchantId']);
-
-            $result = [
+            // Call Simpaisa API to inquire transaction
+            $queryParams = array_filter([
                 'merchantId' => $data['merchantId'],
-                'transactionId' => $transactionId,
-                'userKey' => $userKey,
-                'transaction' => $transaction,
-            ];
+                'transactionId' => $data['transactionId'] ?? null,
+                'userKey' => $data['userKey'] ?? null,
+            ], fn($value) => $value !== null);
+
+            $response = $this->httpClient->get('api/wallets/transaction/inquiry', $queryParams);
 
             // Log the response
             Log::info('Simpaisa Transaction Inquiry Response', [
-                'response' => $result
+                'response' => $response
             ]);
 
-            return $result;
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Transaction Inquiry Error', [
@@ -799,21 +789,10 @@ class SimpaisaService
         // This should query the database using transactionId or userKey
         // and return all transaction details
         
-        // For now, return placeholder data
-        // In production, this should come from database
-        return [
-            'transactionType' => '0',
-            'amount' => '1',
-            'merchantId' => $merchantId,
-            'createdTimestamp' => now()->format('Y-m-d H:i:s.v'),
-            'message' => 'Success',
-            'msisdn' => '3xxxxxxxxx',
-            'operatorId' => '1000xx',
-            'updatedTimestamp' => now()->format('Y-m-d H:i:s.v'),
-            'transactionId' => $transactionId,
-            'userKey' => $userKey,
-            'status' => '0000',
-        ];
+        // Transaction details come from Simpaisa API
+        // This method is kept for backward compatibility
+        // In production, transaction details come from API response
+        return [];
     }
 
     /**
@@ -830,7 +809,8 @@ class SimpaisaService
         // This should query the database using userKey to find the transaction
         // and return its transactionId
         
-        // For now, generate a placeholder (this should be retrieved from database)
+        // Transaction ID comes from Simpaisa API
+        // This method is kept for backward compatibility
         return $this->generateTransactionId();
     }
 
@@ -844,11 +824,8 @@ class SimpaisaService
      */
     protected function getUserKeyByTransactionId(string $transactionId): string
     {
-        // TODO: Implement logic to retrieve user key from database
-        // This should query the database using transactionId to find the transaction
-        // and return its userKey
-        
-        // For now, return placeholder (this should be retrieved from database)
+        // User key comes from Simpaisa API response
+        // This method is kept for backward compatibility
         return '';
     }
 
@@ -876,10 +853,6 @@ class SimpaisaService
                 return $this->buildDisbursementResponse('1001', 'Invalid merchant ID', $data['reference'] ?? '');
             }
 
-            // Validate reference uniqueness
-            // TODO: Check if reference already exists in database
-            // If exists, return error or update existing record based on business logic
-
             // Validate account type and destination bank combination
             if (isset($data['accountType']) && isset($data['destinationBank'])) {
                 $accountType = $data['accountType'];
@@ -892,14 +865,15 @@ class SimpaisaService
                 }
             }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to register customer
-            // 2. Store customer details in database with reference
-            // 3. Return appropriate response
+            // Call Simpaisa API to register customer
+            $requestData = [
+                'request' => $data
+            ];
 
-            // For now, simulate successful registration
-            return $this->buildDisbursementResponse('0000', 'Success', $data['reference']);
+            $response = $this->httpClient->post('api/disbursements/register-customer', $requestData);
+
+            // Return response from Simpaisa API
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Register Customer Error', [
@@ -974,33 +948,15 @@ class SimpaisaService
                 return $this->buildDisbursementResponse('1002', 'Reference is required', '');
             }
 
-            // TODO: Retrieve existing customer from database using reference
-            // $existingCustomer = $this->getCustomerByReference($merchantId, $reference);
-            // if (!$existingCustomer) {
-            //     return $this->buildDisbursementResponse('1003', 'Customer not found', $reference);
-            // }
+            // Call Simpaisa API to update customer
+            $requestData = [
+                'request' => $data
+            ];
 
-            // Validate that non-updatable fields match existing values
-            // TODO: Implement validation logic
-            // if (isset($data['customerAccount']) && $data['customerAccount'] !== $existingCustomer['customerAccount']) {
-            //     return $this->buildDisbursementResponse('1004', 'Customer account cannot be updated', $reference);
-            // }
-            // if (isset($data['accountType']) && $data['accountType'] !== $existingCustomer['accountType']) {
-            //     return $this->buildDisbursementResponse('1005', 'Account type cannot be updated', $reference);
-            // }
-            // if (isset($data['destinationBank']) && $data['destinationBank'] !== $existingCustomer['destinationBank']) {
-            //     return $this->buildDisbursementResponse('1006', 'Destination bank cannot be updated', $reference);
-            // }
+            $response = $this->httpClient->post('api/disbursements/update-customer', $requestData);
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to update customer
-            // 2. Update customer details in database
-            // 3. Only update allowed fields (exclude reference, customerAccount, accountType, destinationBank)
-            // 4. Return appropriate response
-
-            // For now, simulate successful update
-            return $this->buildDisbursementResponse('0000', 'Success', $reference);
+            // Return response from Simpaisa API
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Update Customer Error', [
@@ -1055,55 +1011,23 @@ class SimpaisaService
                 ];
             }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to fetch customer by reference
-            // 2. Or retrieve from database if stored locally
-            // 3. Return customer details
-
-            // TODO: Retrieve customer from database
-            // $customer = $this->getCustomerByReference($merchantId, $reference);
-            // if (!$customer) {
-            //     return [
-            //         'error' => [
-            //             'message' => 'Customer not found',
-            //             'code' => '1003'
-            //         ]
-            //     ];
-            // }
-
-            // For now, simulate customer retrieval
-            // This should match the structure from Simpaisa API
-            $customer = [
-                'reference' => $reference,
-                'merchantId' => (int) $merchantId,
-                'customerName' => 'John Doe',
-                'customerContact' => '923000000000',
-                'customerEmail' => 'customer@example.com',
-                'customerDob' => '1989-12-19',
-                'customerAddress' => (object) [], // Empty object if no address
-                'customerGender' => 'MALE',
-                'customerMaritalStatus' => 'SINGLE',
-                'customerIdNumber' => '4288888888888888',
-                'customerIdExpirationDate' => '2024-04-12',
-                'customerNtnNumber' => 'NTN-8546',
-                'customerAccount' => 'BBBBAAAAAAAAAAAAAA',
-                'accountType' => 'DW',
-                'destinationBank' => 'Easypaisa',
-                'branchCode' => '646416',
-                'createdDate' => now()->toIso8601String(),
+            // Call Simpaisa API to fetch customer by reference
+            $queryParams = [
+                'merchantId' => $merchantId,
+                'reference' => $reference
             ];
 
+            $response = $this->httpClient->get('api/disbursements/fetch-customer', $queryParams);
+
+            // Return response from Simpaisa API
             // Log the response
             Log::info('Simpaisa Fetch Customer Response', [
                 'merchant_id' => $merchantId,
                 'reference' => $reference,
-                'found' => true
+                'response' => $response
             ]);
 
-            return [
-                'customer' => $customer
-            ];
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Fetch Customer Error', [
@@ -1149,86 +1073,20 @@ class SimpaisaService
                 ];
             }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to fetch banks list
-            // 2. Or retrieve from database/cache if stored locally
-            // 3. Return banks list
-
-            // For now, return sample banks list
-            // This should match the structure from Simpaisa API
-            $banks = [
-                [
-                    'code' => 'ABBL',
-                    'name' => 'Al Baraka Bank Limited',
-                    'accountType' => 'BA',
-                    'bankType' => 2
-                ],
-                [
-                    'code' => 'ABHI',
-                    'name' => 'Abhi Finance',
-                    'accountType' => 'BA',
-                    'bankType' => 0
-                ],
-                [
-                    'code' => 'APNA',
-                    'name' => 'Apna Microfinance Bank',
-                    'accountType' => 'BA',
-                    'bankType' => 0
-                ],
-                [
-                    'code' => 'BAFL',
-                    'name' => 'Bank Alfalah Limited',
-                    'accountType' => 'BA',
-                    'bankType' => 0
-                ],
-                [
-                    'code' => 'BAHL',
-                    'name' => 'Bank AL Habib Limited',
-                    'accountType' => 'BA',
-                    'bankType' => 0
-                ],
-                [
-                    'code' => 'EASYPAISA',
-                    'name' => 'Easypaisa',
-                    'accountType' => 'DW',
-                    'bankType' => 0
-                ],
-                [
-                    'code' => 'JAZZCASH',
-                    'name' => 'Jazzcash',
-                    'accountType' => 'DW',
-                    'bankType' => 0
-                ],
-                [
-                    'code' => 'HBL',
-                    'name' => 'Habib Bank Limited',
-                    'accountType' => 'BA',
-                    'bankType' => 0
-                ],
-                [
-                    'code' => 'UBL',
-                    'name' => 'United Bank Limited',
-                    'accountType' => 'BA',
-                    'bankType' => 0
-                ],
-                [
-                    'code' => 'MCB',
-                    'name' => 'MCB Bank Limited',
-                    'accountType' => 'BA',
-                    'bankType' => 0
-                ],
+            // Call Simpaisa API to fetch banks list
+            $queryParams = [
+                'merchantId' => $merchantId
             ];
+
+            $response = $this->httpClient->get('api/disbursements/fetch-banks', $queryParams);
 
             // Log the response
             Log::info('Simpaisa Fetch Banks Response', [
                 'merchant_id' => $merchantId,
-                'banks_count' => count($banks)
+                'response' => $response
             ]);
 
-            return [
-                'banks' => $banks
-            ];
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Fetch Banks Error', [
@@ -1274,29 +1132,20 @@ class SimpaisaService
                 ];
             }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to fetch real-time balance data
-            // 2. Or retrieve from database/cache if stored locally
-            // 3. Return balance information
-
-            // For now, simulate balance data retrieval
-            // This should match the structure from Simpaisa API
-            $balanceData = [
-                'balance-in-total' => 1000000.00, // Total balance in account
-                'available-balance' => 950000.00, // Available balance (total - hold - limit)
-                'balance-on-hold' => 50000.00, // Balance on hold
-                'isoCurrencyCode' => 'PKR', // ISO 4217 currency code
-                'max-amount-limit' => 500000.00, // Maximum amount limit for utilization
+            // Call Simpaisa API to fetch real-time balance data
+            $queryParams = [
+                'merchantId' => $merchantId
             ];
+
+            $response = $this->httpClient->get('api/disbursements/fetch-balance', $queryParams);
 
             // Log the response
             Log::info('Simpaisa Fetch Balance Data Response', [
                 'merchant_id' => $merchantId,
-                'available_balance' => $balanceData['available-balance']
+                'response' => $response
             ]);
 
-            return $balanceData;
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Fetch Balance Data Error', [
@@ -1342,69 +1191,20 @@ class SimpaisaService
                 ];
             }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to fetch reasons list
-            // 2. Or retrieve from database/cache if stored locally
-            // 3. Return reasons list
-
-            // For now, return sample reasons list
-            // This should match the structure from Simpaisa API
-            $reasons = [
-                [
-                    'id' => 1,
-                    'category' => 'Category A',
-                    'code' => '0100'
-                ],
-                [
-                    'id' => 2,
-                    'category' => 'Category B',
-                    'code' => '0200'
-                ],
-                [
-                    'id' => 3,
-                    'category' => 'Category C',
-                    'code' => '0300'
-                ],
-                [
-                    'id' => 4,
-                    'category' => 'B2B Payment',
-                    'code' => '0400'
-                ],
-                [
-                    'id' => 5,
-                    'category' => 'B2C Payment',
-                    'code' => '0500'
-                ],
-                [
-                    'id' => 6,
-                    'category' => 'C2C Payment',
-                    'code' => '0600'
-                ],
-                [
-                    'id' => 7,
-                    'category' => 'Salary Payment',
-                    'code' => '0700'
-                ],
-                [
-                    'id' => 8,
-                    'category' => 'Refund',
-                    'code' => '0800'
-                ],
-                [
-                    'id' => 9,
-                    'category' => 'Category D',
-                    'code' => '9999'
-                ],
+            // Call Simpaisa API to fetch reasons list
+            $queryParams = [
+                'merchantId' => $merchantId
             ];
+
+            $response = $this->httpClient->get('api/disbursements/fetch-reasons', $queryParams);
 
             // Log the response
             Log::info('Simpaisa Fetch Reasons Response', [
                 'merchant_id' => $merchantId,
-                'reasons_count' => count($reasons)
+                'response' => $response
             ]);
 
-            return $reasons;
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Fetch Reasons Error', [
@@ -1470,90 +1270,20 @@ class SimpaisaService
                 return $this->buildDisbursementResponse('1004', 'To date must be equal to or after from date', '');
             }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Query disbursements from database within date range
-            // 2. Apply state filter if provided
-            // 3. Apply pagination (offset, limit)
-            // 4. Return disbursement list
+            // Call Simpaisa API to fetch disbursements list
+            $queryParams = [
+                'merchantId' => $merchantId,
+                'fromDate' => $fromDate,
+                'toDate' => $toDate,
+                'offset' => $offset,
+                'limit' => $limit
+            ];
 
-            // For now, return sample disbursements list
-            // This should match the structure from Simpaisa API
-            $disbursements = [];
-
-            // Generate sample disbursements based on date range
-            $sampleStates = ['published', 'in_review', 'on_hold', 'approved', 'rejected', 'completed', 'failed'];
-            $sampleNames = ['John Doe', 'Jane Smith', 'Ali Khan', 'Sara Ahmed', 'Ahmed Hassan'];
-            $sampleAccounts = ['BBBBAAAAAAAAAAAAAA', 'CCCCBBBBBBBBBBBBBB', 'DDDDCCCCCCCCCCCCCC'];
-            $sampleReasons = ['0100', '0200', '0300', '0400', '0500'];
-
-            // Generate disbursements for the date range
-            $currentDate = $fromDateTime->copy();
-            $disbursementCount = 0;
-            $maxDisbursements = min($limit + $offset, 50); // Limit total sample data
-
-            while ($currentDate->lte($toDateTime) && $disbursementCount < $maxDisbursements) {
-                // Randomly decide if this date should have disbursements
-                if (rand(0, 3) === 0) { // 25% chance
-                    $issueDate = $currentDate->format('Y-m-d');
-                    $disbDate = $currentDate->copy()->addDays(rand(1, 5))->format('Y-m-d');
-                    
-                    $disbursementState = $state ?? $sampleStates[array_rand($sampleStates)];
-                    
-                    // Skip if state filter doesn't match
-                    if ($state && $disbursementState !== $state) {
-                        $currentDate->addDay();
-                        continue;
-                    }
-
-                    $disbursedAmount = rand(1000, 100000);
-                    $adjustmentsWithTax = rand(0, 1) === 0 ? 0 : rand(100, 1000);
-                    $reference = '000000' . Str::random(6);
-                    $disbursementId = Str::uuid()->toString();
-
-                    $disbursements[] = [
-                        'disbursement' => [
-                            'customerName' => $sampleNames[array_rand($sampleNames)],
-                            'customerAccount' => $sampleAccounts[array_rand($sampleAccounts)],
-                            'issueDate' => $issueDate,
-                            'disbDate' => $disbDate,
-                            'currency' => 'PKR',
-                            'disbursedAmount' => $disbursedAmount,
-                            'adjustmentsWithTax' => $adjustmentsWithTax,
-                            'reason' => $sampleReasons[array_rand($sampleReasons)],
-                            'reference' => $reference,
-                            'path' => "/merchants/{$merchantId}/disbursements/{$disbursementId}",
-                            'state' => $disbursementState,
-                        ]
-                    ];
-
-                    $disbursementCount++;
-                }
-
-                $currentDate->addDay();
+            if ($state) {
+                $queryParams['state'] = $state;
             }
 
-            // Apply pagination
-            $totalCount = count($disbursements);
-            $paginatedDisbursements = array_slice($disbursements, $offset, $limit);
-
-            // Build response array (just the disbursements array, no nested "response" key)
-            // The signature will be generated for the response array
-            $responseData = $paginatedDisbursements;
-
-            // Sign the response
-            try {
-                $rsaService = app(\App\Services\RsaSignatureService::class);
-                $signature = $rsaService->signRequest($responseData);
-            } catch (\Exception $e) {
-                // In development, if key file is missing, use empty signature
-                if (app()->environment(['local', 'testing']) && 
-                    (strpos($e->getMessage(), 'not found') !== false || strpos($e->getMessage(), 'file not found') !== false)) {
-                    $signature = ''; // Empty signature for development
-                } else {
-                    throw $e; // Re-throw in production
-                }
-            }
+            $response = $this->httpClient->get('api/disbursements', $queryParams);
 
             // Log the response
             Log::info('Simpaisa List Disbursements Response', [
@@ -1561,16 +1291,12 @@ class SimpaisaService
                 'from_date' => $fromDate,
                 'to_date' => $toDate,
                 'state' => $state,
-                'total_count' => $totalCount,
-                'returned_count' => count($paginatedDisbursements),
                 'offset' => $offset,
-                'limit' => $limit
+                'limit' => $limit,
+                'response' => $response
             ]);
 
-            return [
-                'response' => $responseData,
-                'signature' => $signature,
-            ];
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa List Disbursements Error', [
@@ -1626,33 +1352,21 @@ class SimpaisaService
             // 2. Validate account with the bank
             // 3. Return account title, bank title, and IBAN
 
-            // For now, simulate account title retrieval
-            // This should match the structure from Simpaisa API
-            $responseData = [
-                'status' => '0000',
-                'message' => 'Success',
-                'customerAccount' => $data['customerAccount'],
-                'accountTitle' => 'Alison Smith', // Account holder name
-                'bankTitle' => 'Bank Alfalah Limited', // Full bank name
-                'destinationBank' => $data['destinationBank'],
-                'iban' => 'PK' . str_pad($data['customerAccount'], 22, '0', STR_PAD_LEFT), // Simulated IBAN
+            // Call Simpaisa API to fetch account title information
+            $requestData = [
+                'request' => $data
             ];
 
-            // Sign the response
-            $rsaService = app(\App\Services\RsaSignatureService::class);
-            $signature = $rsaService->signRequest($responseData);
+            $response = $this->httpClient->post('api/disbursements/fetch-account-title', $requestData);
 
             // Log the response
             Log::info('Simpaisa Fetch Account Title Response', [
                 'merchant_id' => $merchantId,
                 'customer_account' => $data['customerAccount'],
-                'account_title' => $responseData['accountTitle']
+                'response' => $response
             ]);
 
-            return [
-                'response' => $responseData,
-                'signature' => $signature,
-            ];
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Fetch Account Title Error', [
@@ -1719,37 +1433,21 @@ class SimpaisaService
             //     return $this->buildDisbursementResponse('1006', 'Amount exceeds maximum limit', $data['reference']);
             // }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to initiate disbursement
-            // 2. Store disbursement request in database with state
-            // 3. Process authorization and authentication
-            // 4. Return appropriate response with state
-
-            // For now, simulate successful initiation
-            // State can be: "published", "in_review", "approved", "rejected", "completed", "failed"
-            $responseData = [
-                'status' => '0000',
-                'message' => 'Success',
-                'reference' => $data['reference'],
-                'state' => 'published', // Initial state
+            // Call Simpaisa API to initiate disbursement
+            $requestData = [
+                'request' => $data
             ];
 
-            // Sign the response
-            $rsaService = app(\App\Services\RsaSignatureService::class);
-            $signature = $rsaService->signRequest($responseData);
+            $response = $this->httpClient->post('api/disbursements/initiate', $requestData);
 
             // Log the response
             Log::info('Simpaisa Initiate Disbursement Response', [
                 'merchant_id' => $merchantId,
                 'reference' => $data['reference'],
-                'state' => $responseData['state']
+                'response' => $response
             ]);
 
-            return [
-                'response' => $responseData,
-                'signature' => $signature,
-            ];
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Initiate Disbursement Error', [
@@ -1811,37 +1509,21 @@ class SimpaisaService
             //     return $this->buildDisbursementResponse('1009', 'Disbursement can only be re-initiated when state is "on_hold"', $data['reference']);
             // }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to re-initiate disbursement
-            // 2. Update disbursement state in database (from "on_hold" to "in_review")
-            // 3. Process authorization and authentication
-            // 4. Return appropriate response with updated state
-
-            // For now, simulate successful re-initiation
-            // State changes from "on_hold" to "in_review"
-            $responseData = [
-                'status' => '0000',
-                'message' => 'Success',
-                'reference' => $data['reference'],
-                'state' => 'in_review', // State after re-initiation
+            // Call Simpaisa API to re-initiate disbursement
+            $requestData = [
+                'request' => $data
             ];
 
-            // Sign the response
-            $rsaService = app(\App\Services\RsaSignatureService::class);
-            $signature = $rsaService->signRequest($responseData);
+            $response = $this->httpClient->post('api/disbursements/re-initiate', $requestData);
 
             // Log the response
             Log::info('Simpaisa Re-initiate Disbursement Response', [
                 'merchant_id' => $merchantId,
                 'reference' => $data['reference'],
-                'state' => $responseData['state']
+                'response' => $response
             ]);
 
-            return [
-                'response' => $responseData,
-                'signature' => $signature,
-            ];
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Re-initiate Disbursement Error', [
@@ -1919,35 +1601,22 @@ class SimpaisaService
             //     return $this->buildDisbursementResponse('1011', 'Disbursement can only be canceled when state is "in_review"', $data['reference']);
             // }
 
-            // TODO: Implement actual API call to Simpaisa
-            // This should:
-            // 1. Call Simpaisa API to update disbursement
-            // 2. Update disbursement details in database
-            // 3. If amount = 0, cancel the disbursement (only if state is "in_review")
-            // 4. Return appropriate response
-
-            // For now, simulate successful update
-            $responseData = [
-                'status' => '0000',
-                'message' => 'Success',
-                'reference' => $data['reference'],
+            // Call Simpaisa API to update disbursement
+            $requestData = [
+                'request' => $data
             ];
 
-            // Sign the response
-            $rsaService = app(\App\Services\RsaSignatureService::class);
-            $signature = $rsaService->signRequest($responseData);
+            $response = $this->httpClient->post('api/disbursements/update', $requestData);
 
             // Log the response
             Log::info('Simpaisa Update Disbursement Response', [
                 'merchant_id' => $merchantId,
                 'reference' => $data['reference'],
-                'is_cancellation' => $isCancellation
+                'is_cancellation' => $isCancellation,
+                'response' => $response
             ]);
 
-            return [
-                'response' => $responseData,
-                'signature' => $signature,
-            ];
+            return $response;
 
         } catch (\Exception $e) {
             Log::error('Simpaisa Update Disbursement Error', [
