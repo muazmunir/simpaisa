@@ -86,16 +86,26 @@ class SimpaisaHttpClient
             }
         }
 
-        // Log the request
+        // Log the request with full details for debugging
         Log::info('Simpaisa API Request', [
             'url' => $url,
             'endpoint' => $endpoint,
             'data' => $this->sanitizeLogData($data),
+            'headers' => config('simpaisa.headers', []),
+            'raw_data_keys' => array_keys($data),
         ]);
 
         try {
             // Get required headers from config
             $headers = config('simpaisa.headers', []);
+            
+            // For wallet transactions, mode might need to be different
+            // Check if this is a wallet transaction endpoint
+            if (strpos($endpoint, 'wallets') !== false) {
+                // Wallet transactions might need different mode
+                // Try 'wallet' or 'payment' instead of 'payout'
+                $headers['mode'] = 'wallet'; // or 'payment' - check Simpaisa docs
+            }
             
             // Make HTTP request with headers
             $response = Http::withOptions($this->defaultOptions)
