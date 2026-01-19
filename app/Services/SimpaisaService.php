@@ -163,13 +163,18 @@ class SimpaisaService
         // Convert amount to integer (paisa) if provided - payment APIs typically use smallest currency unit
         $amount = isset($data['amount']) ? (int) round($data['amount'] * 100) : null;
         
+        // For tokenized transactions (type "9"), productReference might not be needed
+        // Only include productReference for non-tokenized transactions
+        $tokenizedType = config('simpaisa.transaction_types.tokenized_alt', '9');
+        $isTokenized = ($data['transactionType'] ?? '') === $tokenizedType;
+        
         $requestData = array_filter([
             'merchantId' => $data['merchantId'],
             'operatorId' => $data['operatorId'],
             'userKey' => $data['userKey'] ?? null,
             'transactionType' => $data['transactionType'],
             'msisdn' => $data['msisdn'],
-            'productReference' => $data['productReference'] ?? null,
+            'productReference' => (!$isTokenized) ? ($data['productReference'] ?? null) : null,
             'amount' => $amount,
             'productId' => $data['productId'] ?? null,
             'cnic' => $data['cnic'] ?? null,
