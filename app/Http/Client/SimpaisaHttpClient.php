@@ -90,18 +90,11 @@ class SimpaisaHttpClient
             // Get required headers from config
             $headers = config('simpaisa.headers', []);
             
-            // For wallet transactions, mode might need to be different
-            // Check if this is a wallet transaction endpoint
+            // For wallet transactions, try removing mode header completely
+            // "Invalid-Flow" error suggests mode header might be causing issues
             if (strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false) {
-                // Try removing mode header or using different values
-                // Option 1: Remove mode header (comment out to try)
-                // unset($headers['mode']);
-                
-                // Option 2: Try 'wallet' mode
-                $headers['mode'] = 'wallet';
-                
-                // Option 3: Try keeping 'payout' (uncomment if needed)
-                // $headers['mode'] = 'payout';
+                // Try removing mode header - Simpaisa might not need it for wallet transactions
+                unset($headers['mode']);
             }
             
             // Log the EXACT payload being sent to Simpaisa (with signature for debugging)
