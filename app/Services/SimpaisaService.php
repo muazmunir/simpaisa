@@ -160,13 +160,22 @@ class SimpaisaService
         // 7. Return appropriate response
 
         // Call Simpaisa API to initiate transaction
-        // Convert amount to integer (paisa) if provided - payment APIs typically use smallest currency unit
-        $amount = isset($data['amount']) ? (int) round($data['amount'] * 100) : null;
-        
-        // For tokenized transactions (type "9"), productReference might not be needed
-        // Only include productReference for non-tokenized transactions
+        // For tokenized transactions (type "9"), handle differently
         $tokenizedType = config('simpaisa.transaction_types.tokenized_alt', '9');
         $isTokenized = ($data['transactionType'] ?? '') === $tokenizedType;
+        
+        // Convert amount to integer (paisa) if provided - payment APIs typically use smallest currency unit
+        // For tokenized transactions, only include amount if productId is not provided
+        $amount = null;
+        if (!$isTokenized) {
+            // Regular transactions: always convert amount to paisa
+            $amount = isset($data['amount']) ? (int) round($data['amount'] * 100) : null;
+        } else {
+            // Tokenized transactions: only include amount if productId is not provided
+            if (empty($data['productId'] ?? null) && isset($data['amount'])) {
+                $amount = (int) round($data['amount'] * 100);
+            }
+        }
         
         $requestData = array_filter([
             'merchantId' => $data['merchantId'],
