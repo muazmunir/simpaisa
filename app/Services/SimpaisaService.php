@@ -164,16 +164,16 @@ class SimpaisaService
         $tokenizedType = config('simpaisa.transaction_types.tokenized_alt', '9');
         $isTokenized = ($data['transactionType'] ?? '') === $tokenizedType;
         
-        // Convert amount to integer (paisa) if provided - payment APIs typically use smallest currency unit
-        // For tokenized transactions, only include amount if productId is not provided
+        // Amount should be sent in PKR format (not paisa)
+        // Simpaisa API expects amount in PKR (e.g., 100.00 or 100)
         $amount = null;
         if (!$isTokenized) {
-            // Regular transactions: always convert amount to paisa
-            $amount = isset($data['amount']) ? (int) round($data['amount'] * 100) : null;
+            // Regular transactions: send amount as-is (PKR format)
+            $amount = isset($data['amount']) ? (float) $data['amount'] : null;
         } else {
             // Tokenized transactions: only include amount if productId is not provided
             if (empty($data['productId'] ?? null) && isset($data['amount'])) {
-                $amount = (int) round($data['amount'] * 100);
+                $amount = (float) $data['amount'];
             }
         }
         
