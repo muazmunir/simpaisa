@@ -173,7 +173,7 @@ class SimpaisaService
             'accountNumber' => $data['accountNumber'] ?? null,
         ], fn($value) => $value !== null);
 
-        $response = $this->httpClient->post('api/wallets/transaction/initiate', $requestData);
+        $response = $this->httpClient->post('v2/wallets/transaction/initiate', $requestData);
         
         return $response;
     }
@@ -379,7 +379,7 @@ class SimpaisaService
             'accountNumber' => $data['accountNumber'] ?? null,
         ], fn($value) => $value !== null);
 
-        $response = $this->httpClient->post('api/wallets/transaction/verify', $requestData);
+        $response = $this->httpClient->post('v2/wallets/transaction/verify', $requestData);
         
         return $response;
     }
@@ -555,7 +555,7 @@ class SimpaisaService
             'amount' => $data['amount'] ?? null,
         ], fn($value) => $value !== null);
 
-        $response = $this->httpClient->post('api/wallets/transaction/direct-charge', $requestData);
+        $response = $this->httpClient->post('v2/wallets/transaction/direct-charge', $requestData);
 
         // Log the response
         Log::info('Simpaisa Direct Charge Response', [
@@ -590,7 +590,7 @@ class SimpaisaService
             'orderId' => $data['orderId'],
         ], fn($value) => $value !== null);
 
-        $response = $this->httpClient->post('api/wallets/transaction/finalize', $requestData);
+        $response = $this->httpClient->post('v2/wallets/transaction/finalize', $requestData);
 
         // Log the response
         Log::info('Simpaisa Finalize Transaction Response', [
@@ -687,7 +687,7 @@ class SimpaisaService
                 'sourceId' => $data['sourceId'],
             ], fn($value) => $value !== null);
 
-            $response = $this->httpClient->post('api/wallets/transaction/delink', $requestData);
+            $response = $this->httpClient->post('v2/wallets/transaction/delink', $requestData);
 
             // Log the response
             Log::info('Simpaisa Delink Account Response', [
@@ -751,7 +751,7 @@ class SimpaisaService
                 'userKey' => $data['userKey'] ?? null,
             ], fn($value) => $value !== null);
 
-            $response = $this->httpClient->get('api/wallets/transaction/inquiry', $queryParams);
+            $response = $this->httpClient->get('v2/inquire/wallet/transaction/inquire', $queryParams);
 
             // Log the response
             Log::info('Simpaisa Transaction Inquiry Response', [
