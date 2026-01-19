@@ -12,14 +12,15 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Environment Configuration
+    | Mode Configuration
     |--------------------------------------------------------------------------
     |
-    | Set APP_ENV to 'production' for live environment, 'local' or 'testing' for sandbox
+    | Set SIMPaisa_MODE to 'production' for live environment or 'sandbox' for testing
+    | Based on this mode, the base URL will be automatically determined
     |
     */
 
-    'environment' => env('APP_ENV', 'local'),
+    'mode' => env('SIMPaisa_MODE', 'sandbox'),
 
     /*
     |--------------------------------------------------------------------------
@@ -30,12 +31,14 @@ return [
     | Sandbox: https://sandbox.simpaisa.com
     | Production: https://disb.simpaisa.com
     |
+    | The base URL is automatically determined based on the 'mode' setting above.
+    | You can override it by setting SIMPaisa_BASE_URL in .env file
+    |
     */
 
-    // Base URL - defaults to sandbox, set SIMPaisa_BASE_URL in .env to override
-    // Sandbox: https://sandbox.simpaisa.com
-    // Production: https://disb.simpaisa.com
-    'base_url' => env('SIMPaisa_BASE_URL', 'https://sandbox.simpaisa.com'),
+    'base_url' => env('SIMPaisa_BASE_URL', (env('SIMPaisa_MODE', 'sandbox') === 'production') 
+        ? 'https://disb.simpaisa.com' 
+        : 'https://sandbox.simpaisa.com'),
 
     /*
     |--------------------------------------------------------------------------
