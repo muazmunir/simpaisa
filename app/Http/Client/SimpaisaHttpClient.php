@@ -104,13 +104,14 @@ class SimpaisaHttpClient
                 // $headers['mode'] = 'payout';
             }
             
-            // Log the request with full details for debugging
-            Log::info('Simpaisa API Request', [
+            // Log the EXACT payload being sent to Simpaisa (with signature for debugging)
+            Log::info('Simpaisa API Request - EXACT PAYLOAD', [
                 'url' => $url,
                 'endpoint' => $endpoint,
-                'data' => $this->sanitizeLogData($data),
+                'method' => 'POST',
                 'headers' => $headers,
-                'raw_data_keys' => array_keys($data),
+                'payload' => $data, // Complete payload with signature
+                'payload_json' => json_encode($data, JSON_PRETTY_PRINT), // JSON formatted
             ]);
             
             // Make HTTP request with headers
@@ -119,13 +120,16 @@ class SimpaisaHttpClient
                 ->post($url, $data);
 
             $responseData = $response->json();
+            $responseBody = $response->body();
 
-            // Log the response
-            Log::info('Simpaisa API Response', [
+            // Log the EXACT response from Simpaisa
+            Log::info('Simpaisa API Response - EXACT RESPONSE', [
                 'url' => $url,
                 'endpoint' => $endpoint,
-                'status' => $response->status(),
-                'data' => $this->sanitizeLogData($responseData ?? []),
+                'http_status' => $response->status(),
+                'response_data' => $responseData ?? [], // Parsed JSON response
+                'response_body' => $responseBody, // Raw response body
+                'response_headers' => $response->headers(),
             ]);
 
             // Verify response signature if enabled
@@ -188,16 +192,19 @@ class SimpaisaHttpClient
             }
         }
 
-        // Log the request
-        Log::info('Simpaisa API Request', [
-            'url' => $url,
-            'endpoint' => $endpoint,
-            'query_params' => $this->sanitizeLogData($queryParams),
-        ]);
-
         try {
             // Get required headers from config
             $headers = config('simpaisa.headers', []);
+            
+            // Log the EXACT request being sent to Simpaisa
+            Log::info('Simpaisa API GET Request - EXACT REQUEST', [
+                'url' => $url,
+                'endpoint' => $endpoint,
+                'method' => 'GET',
+                'headers' => $headers,
+                'query_params' => $queryParams, // Complete query parameters with signature
+                'full_url' => $url . '?' . http_build_query($queryParams),
+            ]);
             
             // Make HTTP request with headers
             $response = Http::withOptions($this->defaultOptions)
@@ -205,13 +212,16 @@ class SimpaisaHttpClient
                 ->get($url, $queryParams);
 
             $responseData = $response->json();
+            $responseBody = $response->body();
 
-            // Log the response
-            Log::info('Simpaisa API Response', [
+            // Log the EXACT response from Simpaisa
+            Log::info('Simpaisa API GET Response - EXACT RESPONSE', [
                 'url' => $url,
                 'endpoint' => $endpoint,
-                'status' => $response->status(),
-                'data' => $this->sanitizeLogData($responseData ?? []),
+                'http_status' => $response->status(),
+                'response_data' => $responseData ?? [], // Parsed JSON response
+                'response_body' => $responseBody, // Raw response body
+                'response_headers' => $response->headers(),
             ]);
 
             // Verify response signature if enabled
