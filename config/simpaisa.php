@@ -119,6 +119,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Webhook/Callback URLs
+    |--------------------------------------------------------------------------
+    |
+    | URLs where Simpaisa will send transaction status updates
+    | Configure these URLs in your Simpaisa merchant dashboard
+    |
+    */
+
+    'webhooks' => [
+        'wallet_transaction' => env('SIMPaisa_WEBHOOK_WALLET_URL', env('APP_URL') . '/api/webhooks/wallet/transaction'),
+        'disbursement' => env('SIMPaisa_WEBHOOK_DISBURSEMENT_URL', env('APP_URL') . '/api/webhooks/disbursement'),
+        'generic' => env('SIMPaisa_WEBHOOK_GENERIC_URL', env('APP_URL') . '/api/webhooks'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | RSA Digital Signature Configuration
     |--------------------------------------------------------------------------
     |

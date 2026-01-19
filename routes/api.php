@@ -15,6 +15,21 @@ Route::prefix('v2/inquire')->group(function () {
     Route::post('/wallet/transaction/inquire', [TransactionInquiryController::class, 'inquire']);
 });
 
+// Webhook/Callback routes from Simpaisa
+Route::prefix('webhooks')->group(function () {
+    // Wallet transaction webhooks
+    Route::post('/wallet/transaction', [\App\Http\Controllers\SimpaisaWebhookController::class, 'handleWalletTransaction'])
+        ->middleware(\App\Http\Middleware\VerifySimpaisaSignature::class);
+    
+    // Disbursement webhooks
+    Route::post('/disbursement', [\App\Http\Controllers\SimpaisaWebhookController::class, 'handleDisbursement'])
+        ->middleware(\App\Http\Middleware\VerifySimpaisaSignature::class);
+    
+    // Generic webhook (catch-all)
+    Route::post('/', [\App\Http\Controllers\SimpaisaWebhookController::class, 'handleGeneric'])
+        ->middleware(\App\Http\Middleware\VerifySimpaisaSignature::class);
+});
+
 // Disbursement routes
 Route::prefix('disbursements')->group(function () {
     Route::get('/register-customer', [\App\Http\Controllers\DisbursementController::class, 'fetchCustomer']);
