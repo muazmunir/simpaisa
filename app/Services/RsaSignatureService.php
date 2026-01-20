@@ -210,10 +210,9 @@ class RsaSignatureService
             
             // Handle nested arrays/objects - convert to JSON string
             if (is_array($value) || is_object($value)) {
-                // Recursively sort nested objects before JSON encoding
-                $sortedValue = $this->sortRecursively($value);
-                // JSON encode with no spaces, sorted keys, no escaping
-                $value = json_encode($sortedValue, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                // Simpaisa expects JSON with keys in original order (not sorted)
+                // JSON encode with no spaces, original key order
+                $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
             } elseif (is_bool($value)) {
                 $value = $value ? 'true' : 'false';
             } else {
