@@ -297,8 +297,31 @@ class RsaSignatureService
      */
     public function signRequest(array $requestData): string
     {
-        $dataToSign = $this->prepareDataForSigning($requestData);
-        return $this->sign($dataToSign);
+        try {
+            $dataToSign = $this->prepareDataForSigning($requestData);
+            
+            // Log the data being signed
+            Log::info('RSA Sign Request - Data String to Sign', [
+                'data_string' => $dataToSign,
+                'data_length' => strlen($dataToSign),
+            ]);
+            
+            $signature = $this->sign($dataToSign);
+            
+            // Log the generated signature
+            Log::info('RSA Sign Request - Signature Generated', [
+                'signature_length' => strlen($signature),
+                'signature_preview' => substr($signature, 0, 50) . '...',
+            ]);
+            
+            return $signature;
+        } catch (\Exception $e) {
+            Log::error('RSA Sign Request Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
     }
 
     /**
