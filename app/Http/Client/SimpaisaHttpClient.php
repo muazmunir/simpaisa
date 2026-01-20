@@ -5,6 +5,7 @@ namespace App\Http\Client;
 use App\Services\RsaSignatureService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Http\Client\Response;
 
 class SimpaisaHttpClient
 {
@@ -135,6 +136,7 @@ class SimpaisaHttpClient
             }
             
             // Make HTTP request with headers
+            /** @var Response $response */
             $response = Http::withOptions($this->defaultOptions)
                 ->withHeaders($headers)
                 ->post($url, $data);
@@ -248,6 +250,7 @@ class SimpaisaHttpClient
             $headers = config('simpaisa.headers', []);
             
             // Make HTTP request with headers
+            /** @var Response $response */
             $response = Http::withOptions($this->defaultOptions)
                 ->withHeaders($headers)
                 ->get($url, $queryParams);

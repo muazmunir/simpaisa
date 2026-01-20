@@ -59,11 +59,13 @@ class RsaSignatureService
             $success = openssl_sign($data, $signature, $keyResource, OPENSSL_ALGO_SHA256);
 
             if (!$success) {
-                openssl_free_key($keyResource);
+                // Note: openssl_free_key() is deprecated in PHP 8.0+
+                // Resources are automatically freed when they go out of scope
                 throw new \Exception('Failed to sign data: ' . openssl_error_string());
             }
 
-            openssl_free_key($keyResource);
+            // Note: openssl_free_key() is deprecated in PHP 8.0+
+            // Resources are automatically freed when they go out of scope
 
             // Simpaisa expects base64 encoded signature for outgoing requests
             // Note: Some examples show hexadecimal (0x...), but API actually expects base64
@@ -150,14 +152,16 @@ class RsaSignatureService
             }
             
             if ($signatureBinary === false || $signatureBinary === null) {
-                openssl_free_key($keyResource);
+                // Note: openssl_free_key() is deprecated in PHP 8.0+
+                // Resources are automatically freed when they go out of scope
                 throw new \Exception('Failed to decode signature. Expected base64 or hexadecimal format.');
             }
 
             // Verify signature
             $result = openssl_verify($data, $signatureBinary, $keyResource, OPENSSL_ALGO_SHA256);
             
-            openssl_free_key($keyResource);
+            // Note: openssl_free_key() is deprecated in PHP 8.0+
+            // Resources are automatically freed when they go out of scope
 
             // openssl_verify returns 1 for valid signature, 0 for invalid, -1 for error
             if ($result === -1) {
@@ -348,9 +352,8 @@ class RsaSignatureService
 
         $keyDetails = openssl_pkey_get_details($keyResource);
         
-        if ($keyResource) {
-            openssl_free_key($keyResource);
-        }
+        // Note: openssl_free_key() is deprecated in PHP 8.0+
+        // Resources are automatically freed when they go out of scope
 
         // Check if key is RSA 2048-bit
         if ($keyDetails && isset($keyDetails['bits']) && $keyDetails['bits'] >= 2048) {
