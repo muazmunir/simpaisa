@@ -1038,7 +1038,7 @@ class SimpaisaService
                 'reference' => $reference
             ];
 
-            $response = $this->httpClient->get('api/disbursements/fetch-customer', $queryParams);
+            $response = $this->httpClient->get('api/disbursements/customer', $queryParams);
 
             // Return response from Simpaisa API
             // Log the response
@@ -1099,7 +1099,9 @@ class SimpaisaService
                 'merchantId' => $merchantId
             ];
 
-            $response = $this->httpClient->get('api/disbursements/fetch-banks', $queryParams);
+            // Try different endpoint variations
+            // Common patterns: api/disbursements/banks, disbursements/banks, api/disbursements/bank-list
+            $response = $this->httpClient->get('api/disbursements/banks', $queryParams);
 
             // Log the response
             Log::info('Simpaisa Fetch Banks Response', [
@@ -1158,7 +1160,7 @@ class SimpaisaService
                 'merchantId' => $merchantId
             ];
 
-            $response = $this->httpClient->get('api/disbursements/fetch-balance', $queryParams);
+            $response = $this->httpClient->get('api/disbursements/balance', $queryParams);
 
             // Log the response
             Log::info('Simpaisa Fetch Balance Data Response', [
@@ -1217,7 +1219,7 @@ class SimpaisaService
                 'merchantId' => $merchantId
             ];
 
-            $response = $this->httpClient->get('api/disbursements/fetch-reasons', $queryParams);
+            $response = $this->httpClient->get('api/disbursements/reasons', $queryParams);
 
             // Log the response
             Log::info('Simpaisa Fetch Reasons Response', [
