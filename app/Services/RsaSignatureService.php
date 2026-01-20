@@ -210,10 +210,11 @@ class RsaSignatureService
         
         $signatureString = implode('&', $parts);
         
-        // Log the signature string for debugging (first 200 chars)
-        Log::debug('RSA Signature - Prepared Data String', [
+        // Log the signature string for debugging (first 500 chars)
+        Log::info('RSA Signature - Prepared Data String', [
             'string_length' => strlen($signatureString),
-            'string_preview' => substr($signatureString, 0, 200) . (strlen($signatureString) > 200 ? '...' : ''),
+            'string_preview' => substr($signatureString, 0, 500) . (strlen($signatureString) > 500 ? '...' : ''),
+            'full_string' => $signatureString, // Full string for debugging
             'flattened_data' => $flattened,
         ]);
         
