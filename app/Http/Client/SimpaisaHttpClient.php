@@ -73,22 +73,7 @@ class SimpaisaHttpClient
                     $dataToSign = $data['request'];
                 }
                 
-                // Log what we're signing for debugging
-                Log::info('Simpaisa Signature Generation - Data to Sign', [
-                    'endpoint' => $endpoint,
-                    'data_to_sign' => $dataToSign,
-                    'data_to_sign_json' => json_encode($dataToSign, JSON_PRETTY_PRINT),
-                ]);
-                
                 $signature = $this->rsaService->signRequest($dataToSign);
-                
-                // Log the generated signature (first 50 chars for security)
-                Log::info('Simpaisa Signature Generated', [
-                    'endpoint' => $endpoint,
-                    'signature_length' => strlen($signature),
-                    'signature_preview' => substr($signature, 0, 50) . '...',
-                ]);
-                
                 $data['signature'] = $signature;
             } catch (\Exception $e) {
                 // In development, if key file is missing, log warning but continue
@@ -120,16 +105,6 @@ class SimpaisaHttpClient
                 unset($headers['mode']);
             }
             
-            // Log the EXACT payload being sent to Simpaisa (with signature for debugging)
-            Log::info('Simpaisa API Request - EXACT PAYLOAD', [
-                'url' => $url,
-                'endpoint' => $endpoint,
-                'method' => 'POST',
-                'headers' => $headers,
-                'payload' => $data, // Complete payload with signature
-                'payload_json' => json_encode($data, JSON_PRETTY_PRINT), // JSON formatted
-            ]);
-            
             // Make HTTP request with headers
             $response = Http::withOptions($this->defaultOptions)
                 ->withHeaders($headers)
@@ -138,14 +113,11 @@ class SimpaisaHttpClient
             $responseData = $response->json();
             $responseBody = $response->body();
 
-            // Log the EXACT response from Simpaisa
-            Log::info('Simpaisa API Response - EXACT RESPONSE', [
-                'url' => $url,
+            // Log only Simpaisa API response (from Simpaisa)
+            Log::info('Simpaisa API Response', [
                 'endpoint' => $endpoint,
                 'http_status' => $response->status(),
-                'response_data' => $responseData ?? [], // Parsed JSON response
-                'response_body' => $responseBody, // Raw response body
-                'response_headers' => $response->headers(),
+                'response' => $responseData ?? [],
             ]);
 
             // Verify response signature if enabled
@@ -246,16 +218,6 @@ class SimpaisaHttpClient
             // Get required headers from config
             $headers = config('simpaisa.headers', []);
             
-            // Log the EXACT request being sent to Simpaisa
-            Log::info('Simpaisa API GET Request - EXACT REQUEST', [
-                'url' => $url,
-                'endpoint' => $endpoint,
-                'method' => 'GET',
-                'headers' => $headers,
-                'query_params' => $queryParams, // Complete query parameters with signature
-                'full_url' => $url . '?' . http_build_query($queryParams),
-            ]);
-            
             // Make HTTP request with headers
             $response = Http::withOptions($this->defaultOptions)
                 ->withHeaders($headers)
@@ -264,14 +226,11 @@ class SimpaisaHttpClient
             $responseData = $response->json();
             $responseBody = $response->body();
 
-            // Log the EXACT response from Simpaisa
-            Log::info('Simpaisa API GET Response - EXACT RESPONSE', [
-                'url' => $url,
+            // Log only Simpaisa API response (from Simpaisa)
+            Log::info('Simpaisa API Response', [
                 'endpoint' => $endpoint,
                 'http_status' => $response->status(),
-                'response_data' => $responseData ?? [], // Parsed JSON response
-                'response_body' => $responseBody, // Raw response body
-                'response_headers' => $response->headers(),
+                'response' => $responseData ?? [],
             ]);
 
             // Verify response signature if enabled

@@ -224,13 +224,6 @@ class RsaSignatureService
         
         $signatureString = implode('&', $parts);
         
-        // Log the signature string for debugging
-        Log::info('RSA Signature - Prepared Data String', [
-            'string_length' => strlen($signatureString),
-            'full_string' => $signatureString,
-            'original_data' => $data,
-        ]);
-        
         return $signatureString;
     }
     
@@ -298,21 +291,7 @@ class RsaSignatureService
     {
         try {
             $dataToSign = $this->prepareDataForSigning($requestData);
-            
-            // Log the data being signed
-            Log::info('RSA Sign Request - Data String to Sign', [
-                'data_string' => $dataToSign,
-                'data_length' => strlen($dataToSign),
-            ]);
-            
             $signature = $this->sign($dataToSign);
-            
-            // Log the generated signature
-            Log::info('RSA Sign Request - Signature Generated', [
-                'signature_length' => strlen($signature),
-                'signature_preview' => substr($signature, 0, 50) . '...',
-            ]);
-            
             return $signature;
         } catch (\Exception $e) {
             Log::error('RSA Sign Request Error', [

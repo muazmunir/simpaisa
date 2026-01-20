@@ -36,12 +36,6 @@ class SimpaisaService
         // Generate unique transaction ID
         $transactionId = $this->generateTransactionId();
 
-        // Log the request
-        Log::info('Simpaisa Initiate Transaction Request', [
-            'payload' => $data,
-            'transaction_id' => $transactionId
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($data['merchantId'])) {
@@ -89,12 +83,6 @@ class SimpaisaService
             // Call Simpaisa API to initiate transaction
             // In production, this should call the actual payment gateway API
             $result = $this->processTransactionInitiation($data, $transactionId);
-
-            // Log the response
-            Log::info('Simpaisa Initiate Transaction Response', [
-                'response' => $result,
-                'transaction_id' => $transactionId
-            ]);
 
             return $result;
 
@@ -862,12 +850,6 @@ class SimpaisaService
      */
     public function registerCustomer(string $merchantId, array $data): array
     {
-        // Log the request
-        Log::info('Simpaisa Register Customer Request', [
-            'merchant_id' => $merchantId,
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -899,19 +881,10 @@ class SimpaisaService
             // Simpaisa API returns errors in format: { "response": { "status": "...", "message": "..." }, "signature": "..." }
             if (isset($response['response'])) {
                 $responseStatus = $response['response']['status'] ?? null;
-                $responseMessage = $response['response']['message'] ?? null;
                 
-                // If status is not success (0000), log and return the error
+                // If status is not success (0000), return the error from Simpaisa
                 if ($responseStatus !== '0000' && $responseStatus !== null) {
-                    Log::warning('Simpaisa Register Customer API Error Response', [
-                        'status' => $responseStatus,
-                        'message' => $responseMessage,
-                        'merchant_id' => $merchantId,
-                        'reference' => $data['reference'] ?? null,
-                        'full_response' => $response,
-                    ]);
-                    
-                    // Return the actual error from Simpaisa
+                    // Return the actual error from Simpaisa (response already logged in SimpaisaHttpClient)
                     return $response;
                 }
             }
@@ -1056,12 +1029,6 @@ class SimpaisaService
      */
     public function fetchCustomer(string $merchantId, string $reference): array
     {
-        // Log the request
-        Log::info('Simpaisa Fetch Customer Request', [
-            'merchant_id' => $merchantId,
-            'reference' => $reference
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
