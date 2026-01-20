@@ -1278,28 +1278,29 @@ class SimpaisaService
                 $queryParams['state'] = $state;
             }
 
-            // Endpoint format: /merchants/{merchantId}/disbursements (POST request)
+            // Endpoint format: /merchants/{merchantId}/disbursements
+            // Note: List disbursements uses GET request with query parameters
             $endpoint = "merchants/{$merchantId}/disbursements";
             
-            // Prepare request data for POST (direct data, not wrapped in 'request' object)
-            $requestData = [
+            // Prepare query parameters for GET request
+            $queryParams = [
                 'merchantId' => $merchantId,
                 'fromDate' => $fromDate,
                 'toDate' => $toDate,
             ];
             
             if ($state) {
-                $requestData['state'] = $state;
+                $queryParams['state'] = $state;
             }
             if ($offset !== null) {
-                $requestData['offset'] = (string) $offset;
+                $queryParams['offset'] = (string) $offset;
             }
             if ($limit !== null) {
-                $requestData['limit'] = (string) $limit;
+                $queryParams['limit'] = (string) $limit;
             }
             
-            // For list disbursements, send data directly (not wrapped in 'request' object)
-            $response = $this->httpClient->post($endpoint, $requestData);
+            // Use GET request for list disbursements
+            $response = $this->httpClient->get($endpoint, $queryParams);
 
             // Log the response
             Log::info('Simpaisa List Disbursements Response', [
