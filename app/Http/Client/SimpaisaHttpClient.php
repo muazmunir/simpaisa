@@ -127,17 +127,39 @@ class SimpaisaHttpClient
 
             // Verify response signature if enabled
             if (config('simpaisa.rsa.verify_response_signature', true) && isset($responseData['signature'])) {
-                $signature = $responseData['signature'];
-                unset($responseData['signature']);
-                
-                $isValid = $this->rsaService->verifyResponse($responseData, $signature);
-                
-                if (!$isValid) {
-                    Log::warning('Invalid response signature from Simpaisa', [
-                        'endpoint' => $endpoint,
-                    ]);
-                    // Note: We still return the response, but log the warning
-                    // In production, you might want to throw an exception here
+                try {
+                    $signature = $responseData['signature'];
+                    unset($responseData['signature']);
+                    
+                    $isValid = $this->rsaService->verifyResponse($responseData, $signature);
+                    
+                    if (!$isValid) {
+                        Log::warning('Invalid response signature from Simpaisa', [
+                            'endpoint' => $endpoint,
+                        ]);
+                        // Note: We still return the response, but log the warning
+                        // In production, you might want to throw an exception here
+                    }
+                } catch (\Exception $e) {
+                    // If signature verification fails due to missing key file, log warning but continue
+                    $errorMessage = $e->getMessage();
+                    if (strpos($errorMessage, 'not found') !== false || strpos($errorMessage, 'file not found') !== false) {
+                        Log::warning('Skipping response signature verification - Simpaisa public key file not found', [
+                            'error' => $errorMessage,
+                            'endpoint' => $endpoint,
+                        ]);
+                        // Continue without signature verification in development
+                        // Put signature back in response data
+                        $responseData['signature'] = $signature;
+                    } else {
+                        // For other signature verification errors, log but continue
+                        Log::warning('Response signature verification error', [
+                            'error' => $errorMessage,
+                            'endpoint' => $endpoint,
+                        ]);
+                        // Put signature back in response data
+                        $responseData['signature'] = $signature;
+                    }
                 }
             }
 

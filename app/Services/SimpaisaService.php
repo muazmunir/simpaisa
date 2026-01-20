@@ -920,8 +920,30 @@ class SimpaisaService
             return $response;
 
         } catch (\Exception $e) {
+            $errorMessage = $e->getMessage();
+            
+            // Don't expose internal errors (like missing key files) to the API response
+            // Only log them internally
+            if (strpos($errorMessage, 'not found') !== false || 
+                strpos($errorMessage, 'file not found') !== false ||
+                strpos($errorMessage, 'public key') !== false) {
+                // This is an internal configuration error, not a Simpaisa API error
+                Log::error('Simpaisa Register Customer Configuration Error', [
+                    'error' => $errorMessage,
+                    'trace' => $e->getTraceAsString(),
+                    'merchant_id' => $merchantId,
+                    'reference' => $data['reference'] ?? null,
+                ]);
+
+                return $this->buildDisbursementResponse(
+                    '9999',
+                    'Failed to register customer. Please check server configuration.',
+                    $data['reference'] ?? ''
+                );
+            }
+            
             Log::error('Simpaisa Register Customer Error', [
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
                 'trace' => $e->getTraceAsString(),
                 'merchant_id' => $merchantId,
                 'reference' => $data['reference'] ?? null,
@@ -929,7 +951,7 @@ class SimpaisaService
 
             return $this->buildDisbursementResponse(
                 '9999',
-                'Failed to register customer: ' . $e->getMessage(),
+                'Failed to register customer: ' . $errorMessage,
                 $data['reference'] ?? ''
             );
         }
