@@ -376,21 +376,26 @@ class DisbursementController extends Controller
                 ], 500);
             }
 
-            // Verify signature if enabled
+            // Verify signature if enabled and provided
+            // Note: Signature is optional for outgoing requests - it will be auto-generated
             if (config('simpaisa.rsa.verify_incoming_signatures', true)) {
                 try {
                     $requestData = $request->getRequestData();
                     $signature = $request->getSignature();
                     
-                    $isValid = $this->simpaisaService->verifyRequestSignature($requestData, $signature);
-                    
-                    if (!$isValid) {
-                        return response()->json([
-                            'response' => [
-                                'status' => '9999',
-                                'message' => 'Invalid signature',
-                            ]
-                        ], 401);
+                    // Only verify if signature is provided (for incoming webhooks/callbacks)
+                    // For outgoing requests, signature will be auto-generated
+                    if ($signature !== null && $signature !== '') {
+                        $isValid = $this->simpaisaService->verifyRequestSignature($requestData, $signature);
+                        
+                        if (!$isValid) {
+                            return response()->json([
+                                'response' => [
+                                    'status' => '9999',
+                                    'message' => 'Invalid signature',
+                                ]
+                            ], 401);
+                        }
                     }
                 } catch (\Exception $e) {
                     // In development, allow request to proceed if key file is missing
