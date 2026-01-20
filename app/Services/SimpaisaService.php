@@ -895,6 +895,27 @@ class SimpaisaService
 
             $response = $this->httpClient->post($endpoint, $requestData);
 
+            // Check if Simpaisa returned an error response
+            // Simpaisa API returns errors in format: { "response": { "status": "...", "message": "..." }, "signature": "..." }
+            if (isset($response['response'])) {
+                $responseStatus = $response['response']['status'] ?? null;
+                $responseMessage = $response['response']['message'] ?? null;
+                
+                // If status is not success (0000), log and return the error
+                if ($responseStatus !== '0000' && $responseStatus !== null) {
+                    Log::warning('Simpaisa Register Customer API Error Response', [
+                        'status' => $responseStatus,
+                        'message' => $responseMessage,
+                        'merchant_id' => $merchantId,
+                        'reference' => $data['reference'] ?? null,
+                        'full_response' => $response,
+                    ]);
+                    
+                    // Return the actual error from Simpaisa
+                    return $response;
+                }
+            }
+
             // Return response from Simpaisa API
             return $response;
 
@@ -903,11 +924,12 @@ class SimpaisaService
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'merchant_id' => $merchantId,
+                'reference' => $data['reference'] ?? null,
             ]);
 
             return $this->buildDisbursementResponse(
                 '9999',
-                'Failed to register customer. Please try again later.',
+                'Failed to register customer: ' . $e->getMessage(),
                 $data['reference'] ?? ''
             );
         }

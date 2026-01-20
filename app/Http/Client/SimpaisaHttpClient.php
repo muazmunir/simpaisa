@@ -141,10 +141,22 @@ class SimpaisaHttpClient
                 }
             }
 
+            // Check HTTP status code
+            // Note: Simpaisa may return 200 OK even for business logic errors
+            // Business errors are indicated in the response body with status codes like "9999"
             if (!$response->successful()) {
-                throw new \Exception('API request failed with status: ' . $response->status());
+                // Log the error response for debugging
+                Log::error('Simpaisa API HTTP Error', [
+                    'endpoint' => $endpoint,
+                    'http_status' => $response->status(),
+                    'response_body' => $responseBody,
+                    'response_data' => $responseData,
+                ]);
+                throw new \Exception('API request failed with HTTP status: ' . $response->status() . '. Response: ' . substr($responseBody, 0, 500));
             }
 
+            // Return response data (even if it contains error status in response body)
+            // The calling service should check the response.status field
             return $responseData ?? [];
 
         } catch (\Exception $e) {
