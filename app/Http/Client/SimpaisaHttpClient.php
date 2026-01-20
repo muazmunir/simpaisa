@@ -105,6 +105,17 @@ class SimpaisaHttpClient
                 unset($headers['mode']);
             }
             
+            // Log base URL and payload for register customer endpoint
+            if (strpos($endpoint, 'register-customer') !== false) {
+                Log::info('Simpaisa Register Customer Request', [
+                    'base_url' => $baseUrl,
+                    'full_url' => $url,
+                    'endpoint' => $endpoint,
+                    'payload' => $data,
+                    'payload_json' => json_encode($data, JSON_PRETTY_PRINT),
+                ]);
+            }
+            
             // Make HTTP request with headers
             $response = Http::withOptions($this->defaultOptions)
                 ->withHeaders($headers)
