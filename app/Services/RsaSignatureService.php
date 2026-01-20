@@ -191,24 +191,30 @@ class RsaSignatureService
         // Remove signature field if present (we don't sign the signature itself)
         unset($data['signature']);
         
-        // Flatten nested arrays with dot notation (Simpaisa expects flattened format)
-        $flattened = $this->flattenArray($data);
+        // Simpaisa expects: Sort keys alphabetically, then convert nested objects to JSON strings
+        // Format: key1=value1&key2={"nested":"value"}&key3=value3
+        ksort($data);
         
-        // Sort data by key to ensure consistent ordering
-        ksort($flattened);
-        
-        // Build query string format
         $parts = [];
-        foreach ($flattened as $key => $value) {
-            if ($value !== null && $value !== '') {
-                // Convert to string if not already
-                if (is_bool($value)) {
-                    $value = $value ? 'true' : 'false';
-                } elseif (!is_string($value) && !is_numeric($value)) {
-                    $value = (string) $value;
-                }
-                $parts[] = $key . '=' . $value;
+        foreach ($data as $key => $value) {
+            // Skip null and empty string values
+            if ($value === null || $value === '') {
+                continue;
             }
+            
+            // Handle nested arrays/objects - convert to JSON string
+            if (is_array($value) || is_object($value)) {
+                // Recursively sort nested objects before JSON encoding
+                $sortedValue = $this->sortRecursively($value);
+                // JSON encode with no spaces, sorted keys
+                $value = json_encode($sortedValue, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
+            } elseif (is_bool($value)) {
+                $value = $value ? 'true' : 'false';
+            } else {
+                $value = (string) $value;
+            }
+            
+            $parts[] = $key . '=' . $value;
         }
         
         $signatureString = implode('&', $parts);
@@ -216,9 +222,7 @@ class RsaSignatureService
         // Log the signature string for debugging
         Log::info('RSA Signature - Prepared Data String', [
             'string_length' => strlen($signatureString),
-            'string_preview' => substr($signatureString, 0, 500) . (strlen($signatureString) > 500 ? '...' : ''),
             'full_string' => $signatureString, // Full string for debugging
-            'flattened_data' => $flattened,
             'original_data' => $data,
         ]);
         
