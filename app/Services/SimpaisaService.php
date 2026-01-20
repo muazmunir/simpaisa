@@ -1134,8 +1134,8 @@ class SimpaisaService
             }
 
             // Call Simpaisa API to fetch real-time balance data
-            // Endpoint format: /merchants/{merchantId}/disbursements/balance
-            $endpoint = "merchants/{$merchantId}/disbursements/balance";
+            // Endpoint format: /merchants/{merchantId}/disbursements/balance-data
+            $endpoint = "merchants/{$merchantId}/disbursements/balance-data";
             $response = $this->httpClient->get($endpoint, []);
 
             // Log the response
