@@ -65,7 +65,15 @@ class SimpaisaHttpClient
         // Sign the request if enabled
         if (config('simpaisa.rsa.sign_requests', true)) {
             try {
-                $signature = $this->rsaService->signRequest($data);
+                // For disbursement endpoints, sign only the 'request' object, not the top-level structure
+                // Structure: { "request": {...}, "signature": "..." }
+                $dataToSign = $data;
+                if (isset($data['request']) && is_array($data['request'])) {
+                    // Sign only the request object for disbursement endpoints
+                    $dataToSign = $data['request'];
+                }
+                
+                $signature = $this->rsaService->signRequest($dataToSign);
                 $data['signature'] = $signature;
             } catch (\Exception $e) {
                 // In development, if key file is missing, log warning but continue
