@@ -266,11 +266,6 @@ class SimpaisaService
      */
     public function verifyTransaction(array $data): array
     {
-        // Log the request
-        Log::info('Simpaisa Verify Transaction Request', [
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($data['merchantId'])) {
@@ -483,11 +478,6 @@ class SimpaisaService
      */
     public function finalizeTransaction(array $data): array
     {
-        // Log the request
-        Log::info('Simpaisa Finalize/Direct Charge Request', [
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($data['merchantId'])) {
@@ -655,11 +645,6 @@ class SimpaisaService
      */
     public function delinkAccount(array $data): array
     {
-        // Log the request
-        Log::info('Simpaisa Delink Account Request', [
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($data['merchantId'])) {
@@ -733,11 +718,6 @@ class SimpaisaService
      */
     public function inquireTransaction(array $data): array
     {
-        // Log the request
-        Log::info('Simpaisa Transaction Inquiry Request', [
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($data['merchantId'])) {
@@ -973,12 +953,6 @@ class SimpaisaService
      */
     public function updateCustomer(string $merchantId, array $data): array
     {
-        // Log the request
-        Log::info('Simpaisa Update Customer Request', [
-            'merchant_id' => $merchantId,
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -1096,11 +1070,6 @@ class SimpaisaService
      */
     public function fetchBanks(string $merchantId): array
     {
-        // Log the request
-        Log::info('Simpaisa Fetch Banks Request', [
-            'merchant_id' => $merchantId
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -1153,11 +1122,6 @@ class SimpaisaService
      */
     public function fetchBalanceData(string $merchantId): array
     {
-        // Log the request
-        Log::info('Simpaisa Fetch Balance Data Request', [
-            'merchant_id' => $merchantId
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -1210,11 +1174,6 @@ class SimpaisaService
      */
     public function fetchReasons(string $merchantId): array
     {
-        // Log the request
-        Log::info('Simpaisa Fetch Reasons Request', [
-            'merchant_id' => $merchantId
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -1268,11 +1227,6 @@ class SimpaisaService
     public function listDisbursements(string $merchantId, array $data): array
     {
         // Log the request
-        Log::info('Simpaisa List Disbursements Request', [
-            'merchant_id' => $merchantId,
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -1363,11 +1317,6 @@ class SimpaisaService
     public function fetchAccountTitle(string $merchantId, array $data): array
     {
         // Log the request
-        Log::info('Simpaisa Fetch Account Title Request', [
-            'merchant_id' => $merchantId,
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -1435,11 +1384,6 @@ class SimpaisaService
     public function initiateDisbursement(string $merchantId, array $data): array
     {
         // Log the request
-        Log::info('Simpaisa Initiate Disbursement Request', [
-            'merchant_id' => $merchantId,
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -1518,11 +1462,6 @@ class SimpaisaService
     public function reinitiateDisbursement(string $merchantId, array $data): array
     {
         // Log the request
-        Log::info('Simpaisa Re-initiate Disbursement Request', [
-            'merchant_id' => $merchantId,
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
@@ -1598,11 +1537,6 @@ class SimpaisaService
     public function updateDisbursement(string $merchantId, array $data): array
     {
         // Log the request
-        Log::info('Simpaisa Update Disbursement Request', [
-            'merchant_id' => $merchantId,
-            'payload' => $data
-        ]);
-
         try {
             // Validate merchant
             if (!$this->validateMerchant($merchantId)) {
