@@ -65,11 +65,9 @@ class RsaSignatureService
 
             openssl_free_key($keyResource);
 
-            // Simpaisa expects hexadecimal format for outgoing requests (with 0x prefix)
-            // Convert binary signature to hexadecimal
-            $hexSignature = '0x' . bin2hex($signature);
-            
-            return $hexSignature;
+            // Simpaisa expects base64 encoded signature for outgoing requests
+            // Note: Some examples show hexadecimal (0x...), but API actually expects base64
+            return base64_encode($signature);
 
         } catch (\Exception $e) {
             Log::error('RSA Signature Generation Error', [
