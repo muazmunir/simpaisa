@@ -128,12 +128,29 @@ class RsaSignatureService
                 throw new \Exception('Failed to load public key: ' . openssl_error_string());
             }
 
-            // Decode signature from base64
+            // Decode signature - Simpaisa can send signatures in base64 or hexadecimal format
+            $signatureBinary = null;
+            
+            // Try base64 first (most common)
             $signatureBinary = base64_decode($signature, true);
             
+            // If base64 decode failed, try hexadecimal format
             if ($signatureBinary === false) {
+                // Check if signature is hexadecimal (starts with 0x or is hex string)
+                $hexSignature = $signature;
+                if (str_starts_with($hexSignature, '0x')) {
+                    $hexSignature = substr($hexSignature, 2);
+                }
+                
+                // Try to decode as hexadecimal
+                if (ctype_xdigit($hexSignature)) {
+                    $signatureBinary = hex2bin($hexSignature);
+                }
+            }
+            
+            if ($signatureBinary === false || $signatureBinary === null) {
                 openssl_free_key($keyResource);
-                throw new \Exception('Failed to decode signature from base64');
+                throw new \Exception('Failed to decode signature. Expected base64 or hexadecimal format.');
             }
 
             // Verify signature

@@ -927,14 +927,17 @@ class SimpaisaService
             $dataToVerify = $rsaService->prepareDataForSigning($requestData);
             return $rsaService->verify($dataToVerify, $signature);
         } catch (\Exception $e) {
-            // In development, if key file is missing, throw exception so controller can handle it
+            $errorMessage = $e->getMessage();
+            
+            // In development, if key file is missing, throw exception so controller can handle it gracefully
             if (app()->environment(['local', 'testing']) && 
-                (strpos($e->getMessage(), 'not found') !== false || strpos($e->getMessage(), 'file not found') !== false)) {
-                throw $e; // Re-throw so controller can handle gracefully
+                (strpos($errorMessage, 'not found') !== false || strpos($errorMessage, 'file not found') !== false)) {
+                // Re-throw so controller can handle gracefully (skip verification in dev)
+                throw $e;
             }
             
             Log::error('Request signature verification error', [
-                'error' => $e->getMessage(),
+                'error' => $errorMessage,
             ]);
             return false;
         }

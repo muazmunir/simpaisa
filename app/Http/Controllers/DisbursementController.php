@@ -366,14 +366,21 @@ class DisbursementController extends Controller
                     }
                 } catch (\Exception $e) {
                     // In development, allow request to proceed if key file is missing
+                    $errorMessage = $e->getMessage();
                     if (app()->environment(['local', 'testing']) && 
-                        (strpos($e->getMessage(), 'not found') !== false || strpos($e->getMessage(), 'file not found') !== false)) {
+                        (strpos($errorMessage, 'not found') !== false || strpos($errorMessage, 'file not found') !== false)) {
                         // Skip signature verification in development if key file is missing
+                        Log::warning('Skipping signature verification - Simpaisa public key file not found (development mode)', [
+                            'error' => $errorMessage,
+                        ]);
                     } else {
+                        Log::error('Signature verification failed', [
+                            'error' => $errorMessage,
+                        ]);
                         return response()->json([
                             'response' => [
                                 'status' => '9999',
-                                'message' => 'Signature verification failed: ' . $e->getMessage(),
+                                'message' => 'Signature verification failed: ' . $errorMessage,
                             ]
                         ], 500);
                     }
