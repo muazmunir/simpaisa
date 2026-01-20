@@ -65,8 +65,11 @@ class RsaSignatureService
 
             openssl_free_key($keyResource);
 
-            // Return base64 encoded signature
-            return base64_encode($signature);
+            // Simpaisa expects hexadecimal format for outgoing requests (with 0x prefix)
+            // Convert binary signature to hexadecimal
+            $hexSignature = '0x' . bin2hex($signature);
+            
+            return $hexSignature;
 
         } catch (\Exception $e) {
             Log::error('RSA Signature Generation Error', [
@@ -190,19 +193,20 @@ class RsaSignatureService
         // Remove signature field if present (we don't sign the signature itself)
         unset($data['signature']);
         
-        // Flatten nested arrays
-        $flattened = $this->flattenArray($data);
-        
         // Sort data by key to ensure consistent ordering
-        ksort($flattened);
+        ksort($data);
         
         // Build query string format
+        // For nested objects/arrays, convert to JSON string (not flatten)
         $parts = [];
-        foreach ($flattened as $key => $value) {
+        foreach ($data as $key => $value) {
             if ($value !== null && $value !== '') {
                 // Convert arrays/objects to JSON string for consistent signing
+                // Simpaisa expects nested objects as JSON strings, not flattened
                 if (is_array($value) || is_object($value)) {
-                    $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_UNICODE);
+                    // Sort nested arrays/objects recursively before JSON encoding
+                    $value = $this->sortRecursively($value);
+                    $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
                 }
                 $parts[] = $key . '=' . $value;
             }
@@ -210,15 +214,42 @@ class RsaSignatureService
         
         $signatureString = implode('&', $parts);
         
-        // Log the signature string for debugging (first 500 chars)
+        // Log the signature string for debugging
         Log::info('RSA Signature - Prepared Data String', [
             'string_length' => strlen($signatureString),
             'string_preview' => substr($signatureString, 0, 500) . (strlen($signatureString) > 500 ? '...' : ''),
             'full_string' => $signatureString, // Full string for debugging
-            'flattened_data' => $flattened,
+            'original_data' => $data,
         ]);
         
         return $signatureString;
+    }
+    
+    /**
+     * Recursively sort arrays and objects for consistent JSON encoding
+     * 
+     * @param mixed $data
+     * @return mixed
+     */
+    protected function sortRecursively($data)
+    {
+        if (is_array($data)) {
+            ksort($data);
+            foreach ($data as $key => $value) {
+                if (is_array($value) || is_object($value)) {
+                    $data[$key] = $this->sortRecursively($value);
+                }
+            }
+        } elseif (is_object($data)) {
+            $data = (array) $data;
+            ksort($data);
+            foreach ($data as $key => $value) {
+                if (is_array($value) || is_object($value)) {
+                    $data[$key] = $this->sortRecursively($value);
+                }
+            }
+        }
+        return $data;
     }
 
     /**
