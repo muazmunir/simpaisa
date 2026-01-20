@@ -27,7 +27,7 @@ class InitiateTransactionRequest extends FormRequest
             'userKey' => ['required', 'string'],
             'transactionType' => ['required', 'string', 'regex:/^\d{1,2}$/'],
             'msisdn' => ['required', 'string', 'regex:/^3\d{9}$/'],
-            'productReference' => ['required', 'string'],
+            // productReference removed - not required by Simpaisa API
         ];
 
         // For tokenization (transactionType = '9'), productId OR amount is required
@@ -79,7 +79,6 @@ class InitiateTransactionRequest extends FormRequest
             'transactionType.regex' => 'Transaction type must be 1 or 2 digits',
             'msisdn.required' => 'MSISDN is required',
             'msisdn.regex' => 'MSISDN must be a valid 10-digit number starting with 3',
-            'productReference.required' => 'Product reference is required',
             'cnic.required' => 'CNIC is required for HBL Konnect',
             'cnic.size' => 'CNIC must be exactly 13 digits',
             'cnic.regex' => 'CNIC must be a valid 13-digit number',

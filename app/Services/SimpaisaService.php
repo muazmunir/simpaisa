@@ -119,17 +119,16 @@ class SimpaisaService
         // Keep transactionType as-is (Simpaisa expects "0" not "00" based on error response)
         $transactionType = $data['transactionType'] ?? '';
         
-        // Convert amount to integer (paisa) - Simpaisa API expects amount in smallest currency unit
-        // 100 PKR = 10000 paisa
-        // Keep as integer (not string) - JSON will serialize it correctly
+        // Amount format - Simpaisa API expects amount in PKR (not paisa)
+        // Send amount as-is without conversion
         $amount = null;
         if (!$isTokenized) {
-            // Regular transactions: convert amount to paisa
-            $amount = isset($data['amount']) ? (int) round($data['amount'] * 100) : null;
+            // Regular transactions: use amount as-is (PKR)
+            $amount = isset($data['amount']) ? (int) round($data['amount']) : null;
         } else {
             // Tokenized transactions: only include amount if productId is not provided
             if (empty($data['productId'] ?? null) && isset($data['amount'])) {
-                $amount = (int) round($data['amount'] * 100);
+                $amount = (int) round($data['amount']);
             }
         }
         
@@ -139,7 +138,7 @@ class SimpaisaService
             'userKey' => $data['userKey'] ?? null,
             'transactionType' => $transactionType, // Keep original format
             'msisdn' => $data['msisdn'],
-            'productReference' => (!$isTokenized) ? ($data['productReference'] ?? null) : null,
+            // productReference removed - not required by Simpaisa API
             'amount' => $amount,
             'productId' => $data['productId'] ?? null,
             'cnic' => $data['cnic'] ?? null,

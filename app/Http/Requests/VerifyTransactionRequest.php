@@ -26,7 +26,7 @@ class VerifyTransactionRequest extends FormRequest
             'userKey' => ['required', 'string'],
             'transactionType' => ['required', 'string', 'regex:/^\d{1,2}$/'],
             'msisdn' => ['required', 'string', 'regex:/^3\d{9}$/'],
-            'productReference' => ['required', 'string'],
+            // productReference removed - not required by Simpaisa API
             'otp' => ['required', 'string', 'size:10'],
         ];
 
@@ -77,7 +77,6 @@ class VerifyTransactionRequest extends FormRequest
             'transactionType.regex' => 'Transaction type must be 1 or 2 digits',
             'msisdn.required' => 'MSISDN is required',
             'msisdn.regex' => 'MSISDN must be a valid 10-digit number starting with 3',
-            'productReference.required' => 'Product reference is required',
             'otp.required' => 'OTP is required',
             'otp.size' => 'OTP must be exactly 10 characters',
             'cnic.required' => 'CNIC is required for HBL Konnect',
