@@ -229,7 +229,6 @@ class RsaSignatureService
         Log::info('RSA Signature - Prepared Data String', [
             'string_length' => strlen($signatureString),
             'full_string' => $signatureString,
-            'flattened_data' => $flattened,
             'original_data' => $data,
         ]);
         
