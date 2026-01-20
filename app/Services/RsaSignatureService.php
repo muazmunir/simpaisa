@@ -202,13 +202,22 @@ class RsaSignatureService
             if ($value !== null && $value !== '') {
                 // Convert arrays/objects to JSON string for consistent signing
                 if (is_array($value) || is_object($value)) {
-                    $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                    $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_UNICODE);
                 }
                 $parts[] = $key . '=' . $value;
             }
         }
         
-        return implode('&', $parts);
+        $signatureString = implode('&', $parts);
+        
+        // Log the signature string for debugging (first 200 chars)
+        Log::debug('RSA Signature - Prepared Data String', [
+            'string_length' => strlen($signatureString),
+            'string_preview' => substr($signatureString, 0, 200) . (strlen($signatureString) > 200 ? '...' : ''),
+            'flattened_data' => $flattened,
+        ]);
+        
+        return $signatureString;
     }
 
     /**

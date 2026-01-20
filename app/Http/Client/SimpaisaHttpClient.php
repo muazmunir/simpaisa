@@ -73,7 +73,22 @@ class SimpaisaHttpClient
                     $dataToSign = $data['request'];
                 }
                 
+                // Log what we're signing for debugging
+                Log::info('Simpaisa Signature Generation - Data to Sign', [
+                    'endpoint' => $endpoint,
+                    'data_to_sign' => $dataToSign,
+                    'data_to_sign_json' => json_encode($dataToSign, JSON_PRETTY_PRINT),
+                ]);
+                
                 $signature = $this->rsaService->signRequest($dataToSign);
+                
+                // Log the generated signature (first 50 chars for security)
+                Log::info('Simpaisa Signature Generated', [
+                    'endpoint' => $endpoint,
+                    'signature_length' => strlen($signature),
+                    'signature_preview' => substr($signature, 0, 50) . '...',
+                ]);
+                
                 $data['signature'] = $signature;
             } catch (\Exception $e) {
                 // In development, if key file is missing, log warning but continue
