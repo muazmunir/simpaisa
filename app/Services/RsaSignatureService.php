@@ -191,25 +191,32 @@ class RsaSignatureService
         // Remove signature field if present (we don't sign the signature itself)
         unset($data['signature']);
         
-        // Simpaisa expects: Sort keys alphabetically, then convert nested objects to JSON strings
-        // Format: key1=value1&key2={"nested":"value"}&key3=value3
-        ksort($data);
+        // Simpaisa Standard Format:
+        // 1. Sort all keys alphabetically (case-sensitive)
+        // 2. Flatten nested objects with dot notation (customerAddress.country=Pakistan)
+        // 3. Skip null and empty string values
+        // 4. Format: key1=value1&key2=value2&nested.key=value
         
+        // Flatten nested arrays with dot notation
+        $flattened = $this->flattenArray($data);
+        
+        // Sort all keys alphabetically
+        ksort($flattened);
+        
+        // Build query string format
         $parts = [];
-        foreach ($data as $key => $value) {
+        foreach ($flattened as $key => $value) {
             // Skip null and empty string values
             if ($value === null || $value === '') {
                 continue;
             }
             
-            // Handle nested arrays/objects - convert to JSON string
-            if (is_array($value) || is_object($value)) {
-                // Recursively sort nested objects before JSON encoding
-                $sortedValue = $this->sortRecursively($value);
-                // JSON encode with no spaces, sorted keys
-                $value = json_encode($sortedValue, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_LINE_TERMINATORS);
-            } elseif (is_bool($value)) {
+            // Convert value to string
+            if (is_bool($value)) {
                 $value = $value ? 'true' : 'false';
+            } elseif (is_array($value) || is_object($value)) {
+                // This shouldn't happen after flattening, but handle it just in case
+                $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             } else {
                 $value = (string) $value;
             }
@@ -222,7 +229,8 @@ class RsaSignatureService
         // Log the signature string for debugging
         Log::info('RSA Signature - Prepared Data String', [
             'string_length' => strlen($signatureString),
-            'full_string' => $signatureString, // Full string for debugging
+            'full_string' => $signatureString,
+            'flattened_data' => $flattened,
             'original_data' => $data,
         ]);
         
