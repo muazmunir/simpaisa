@@ -1237,8 +1237,16 @@ class SimpaisaService
             $fromDate = $data['fromDate'] ?? '';
             $toDate = $data['toDate'] ?? '';
             $state = $data['state'] ?? null;
-            $offset = (int) ($data['offset'] ?? 0);
-            $limit = (int) ($data['limit'] ?? 25);
+            
+            // Handle pagination: if 'page' is provided, calculate 'offset'
+            if (isset($data['page'])) {
+                $page = (int) $data['page'];
+                $limit = isset($data['limit']) ? (int) $data['limit'] : 10;
+                $offset = ($page - 1) * $limit;
+            } else {
+                $offset = isset($data['offset']) ? (int) $data['offset'] : 0;
+                $limit = isset($data['limit']) ? (int) $data['limit'] : 25;
+            }
 
             // Validate date range
             if (empty($fromDate) || empty($toDate)) {

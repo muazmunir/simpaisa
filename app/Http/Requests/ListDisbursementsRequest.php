@@ -20,14 +20,26 @@ class ListDisbursementsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Direct fields (not wrapped in 'request' object for list disbursements)
-            'merchantId' => ['required', 'string'],
-            'fromDate' => ['required', 'date_format:Y-m-d'],
-            'toDate' => ['required', 'date_format:Y-m-d', 'after_or_equal:fromDate'],
+            // Support both formats: direct fields OR wrapped in 'request' object
+            'request' => ['nullable', 'array'],
+            'signature' => ['nullable', 'string'], // Optional - will be auto-generated for outgoing requests
+            
+            // Direct fields (if not wrapped in 'request' object)
+            'merchantId' => ['nullable', 'string'],
+            'fromDate' => ['nullable', 'date_format:Y-m-d'],
+            'toDate' => ['nullable', 'date_format:Y-m-d'],
             'state' => ['nullable', 'string', 'in:published,in_review,on_hold,approved,rejected,completed,failed'],
             'offset' => ['nullable', 'string'],
             'limit' => ['nullable', 'string'],
-            'signature' => ['nullable', 'string'], // Optional - will be auto-generated for outgoing requests
+            'page' => ['nullable', 'integer', 'min:1'],
+            
+            // Request object fields (if wrapped in 'request' object)
+            'request.fromDate' => ['required_with:request', 'date_format:Y-m-d'],
+            'request.toDate' => ['required_with:request', 'date_format:Y-m-d', 'after_or_equal:request.fromDate'],
+            'request.state' => ['nullable', 'string', 'in:published,in_review,on_hold,approved,rejected,completed,failed'],
+            'request.offset' => ['nullable', 'string'],
+            'request.limit' => ['nullable', 'string'],
+            'request.page' => ['nullable', 'integer', 'min:1'],
         ];
     }
 
@@ -52,9 +64,14 @@ class ListDisbursementsRequest extends FormRequest
      */
     public function getRequestData(): array
     {
-        // Return all validated data except signature
+        // If data is wrapped in 'request' object, return that
+        if ($this->has('request') && is_array($this->input('request'))) {
+            return $this->input('request');
+        }
+        
+        // Otherwise return direct fields
         $data = $this->validated();
-        unset($data['signature']);
+        unset($data['signature'], $data['request']);
         return $data;
     }
 
