@@ -26,24 +26,41 @@ class SimpaisaHttpClient
     {
         $options = [
             'timeout' => config('simpaisa.timeout', 30),
-            'verify' => config('simpaisa.ssl.verify_peer', true),
         ];
 
-        // Add SSL client certificate for mutual SSL
+        // Add SSL client certificate for mutual SSL (optional)
         $clientCertPath = config('simpaisa.ssl.client_certificate_path');
         $clientKeyPath = config('simpaisa.ssl.client_private_key_path');
         $caCertPath = config('simpaisa.ssl.ca_certificate_path');
 
-        if ($clientCertPath && file_exists($clientCertPath)) {
+        // Check if SSL files exist
+        $hasClientCert = $clientCertPath && file_exists($clientCertPath);
+        $hasClientKey = $clientKeyPath && file_exists($clientKeyPath);
+        $hasCaCert = $caCertPath && file_exists($caCertPath);
+
+        // If SSL files are provided, use them for mutual SSL
+        if ($hasClientCert) {
             $options['cert'] = $clientCertPath;
         }
 
-        if ($clientKeyPath && file_exists($clientKeyPath)) {
+        if ($hasClientKey) {
             $options['ssl_key'] = [$clientKeyPath, ''];
         }
 
-        if ($caCertPath && file_exists($caCertPath)) {
+        // Set verify option
+        if ($hasCaCert) {
+            // Use CA cert bundle if provided
             $options['verify'] = $caCertPath;
+        } else {
+            // If no CA cert, use verify_peer setting (default: true)
+            // But if SSL files are missing, disable verification in development
+            $verifyPeer = config('simpaisa.ssl.verify_peer', true);
+            if (!($hasClientCert && $hasClientKey) && app()->environment(['local', 'testing'])) {
+                // In development, if SSL files are missing, disable verification
+                $options['verify'] = false;
+            } else {
+                $options['verify'] = $verifyPeer;
+            }
         }
 
         return $options;
