@@ -12,6 +12,7 @@ use App\Http\Requests\FetchAccountRequest;
 use App\Services\SimpaisaService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class DisbursementController extends Controller
 {
@@ -44,18 +45,40 @@ class DisbursementController extends Controller
 
             // Verify signature if enabled
             if (config('simpaisa.rsa.verify_incoming_signatures', true)) {
-                $requestData = $request->getRequestData();
-                $signature = $request->getSignature();
-                
-                $isValid = $this->simpaisaService->verifyRequestSignature($requestData, $signature);
-                
-                if (!$isValid) {
-                    return response()->json([
-                        'response' => [
-                            'status' => '9999',
-                            'message' => 'Invalid signature',
-                        ]
-                    ], 401);
+                try {
+                    $requestData = $request->getRequestData();
+                    $signature = $request->getSignature();
+                    
+                    $isValid = $this->simpaisaService->verifyRequestSignature($requestData, $signature);
+                    
+                    if (!$isValid) {
+                        return response()->json([
+                            'response' => [
+                                'status' => '9999',
+                                'message' => 'Invalid signature',
+                            ]
+                        ], 401);
+                    }
+                } catch (\Exception $e) {
+                    // In development, allow request to proceed if key file is missing
+                    $errorMessage = $e->getMessage();
+                    if (app()->environment(['local', 'testing']) && 
+                        (strpos($errorMessage, 'not found') !== false || strpos($errorMessage, 'file not found') !== false)) {
+                        // Skip signature verification in development if key file is missing
+                        Log::warning('Skipping signature verification - Simpaisa public key file not found (development mode)', [
+                            'error' => $errorMessage,
+                        ]);
+                    } else {
+                        Log::error('Signature verification failed', [
+                            'error' => $errorMessage,
+                        ]);
+                        return response()->json([
+                            'response' => [
+                                'status' => '9999',
+                                'message' => 'Signature verification failed: ' . $errorMessage,
+                            ]
+                        ], 500);
+                    }
                 }
             }
 
