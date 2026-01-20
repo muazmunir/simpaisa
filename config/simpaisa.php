@@ -152,7 +152,9 @@ return [
         'public_key_path' => env('SIMPaisa_RSA_PUBLIC_KEY_PATH', storage_path('app/keys/merchant_public_key.pem')),
         
         // Path to Simpaisa's RSA public key (used to verify incoming responses)
-        'simpaisa_public_key_path' => env('SIMPaisa_RSA_SIMPaisa_PUBLIC_KEY_PATH', storage_path('app/keys/simpaisa_public_key.pem')),
+        // Temporarily using merchant_public_key.pem for testing
+        // In production, use Simpaisa's actual public key
+        'simpaisa_public_key_path' => env('SIMPaisa_RSA_SIMPaisa_PUBLIC_KEY_PATH', storage_path('app/keys/merchant_public_key.pem')),
         
         // Enable/disable signature verification for responses
         'verify_response_signature' => env('SIMPaisa_VERIFY_RESPONSE_SIGNATURE', true),
