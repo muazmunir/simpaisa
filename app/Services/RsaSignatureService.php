@@ -51,10 +51,10 @@ class RsaSignatureService
                 throw new \Exception('Failed to load private key: ' . openssl_error_string());
             }
 
-            // Hash the data using SHA-256
-            $hash = hash('sha256', $data, true);
-
-            // Sign the hash using RSA private key
+            // Sign the data using RSA private key with SHA-256
+            // Note: openssl_sign() with OPENSSL_ALGO_SHA256 automatically:
+            // 1. Hashes the data with SHA-256
+            // 2. Signs the hash with RSA private key
             $signature = '';
             $success = openssl_sign($data, $signature, $keyResource, OPENSSL_ALGO_SHA256);
 

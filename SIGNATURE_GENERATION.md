@@ -43,10 +43,14 @@ We convert the data into a special format:
 We use our RSA private key to sign the formatted string:
 
 1. **Load the private key** from file (stored at `storage/app/keys/merchant_private_key.pem`)
-2. **Sign the string** using SHA-256 algorithm
+2. **Sign the string** using `openssl_sign()` with `OPENSSL_ALGO_SHA256`:
+   - Automatically hashes the data with SHA-256
+   - Signs the hash with RSA private key
 3. **Encode the signature** in Base64 format
 
 This creates a unique signature that only our private key can produce.
+
+**Note:** `openssl_sign()` with `OPENSSL_ALGO_SHA256` automatically handles both hashing and signing in one step.
 
 ### Step 4: Add Signature to Request
 
@@ -88,7 +92,9 @@ Let's say we want to register a customer:
    ```
 
 3. **Sign with private key:**
-   - Use RSA private key + SHA-256
+   - Use `openssl_sign()` with `OPENSSL_ALGO_SHA256`
+   - Automatically hashes with SHA-256
+   - Signs hash with RSA private key
    - Creates binary signature
 
 4. **Base64 encode:**
