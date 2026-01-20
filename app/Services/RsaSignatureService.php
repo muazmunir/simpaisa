@@ -191,20 +191,21 @@ class RsaSignatureService
         // Remove signature field if present (we don't sign the signature itself)
         unset($data['signature']);
         
+        // Flatten nested arrays with dot notation (Simpaisa expects flattened format)
+        $flattened = $this->flattenArray($data);
+        
         // Sort data by key to ensure consistent ordering
-        ksort($data);
+        ksort($flattened);
         
         // Build query string format
-        // For nested objects/arrays, convert to JSON string (not flatten)
         $parts = [];
-        foreach ($data as $key => $value) {
+        foreach ($flattened as $key => $value) {
             if ($value !== null && $value !== '') {
-                // Convert arrays/objects to JSON string for consistent signing
-                // Simpaisa expects nested objects as JSON strings, not flattened
-                if (is_array($value) || is_object($value)) {
-                    // Sort nested arrays/objects recursively before JSON encoding
-                    $value = $this->sortRecursively($value);
-                    $value = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                // Convert to string if not already
+                if (is_bool($value)) {
+                    $value = $value ? 'true' : 'false';
+                } elseif (!is_string($value) && !is_numeric($value)) {
+                    $value = (string) $value;
                 }
                 $parts[] = $key . '=' . $value;
             }
@@ -217,6 +218,7 @@ class RsaSignatureService
             'string_length' => strlen($signatureString),
             'string_preview' => substr($signatureString, 0, 500) . (strlen($signatureString) > 500 ? '...' : ''),
             'full_string' => $signatureString, // Full string for debugging
+            'flattened_data' => $flattened,
             'original_data' => $data,
         ]);
         
