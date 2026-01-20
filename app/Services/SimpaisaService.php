@@ -112,35 +112,24 @@ class SimpaisaService
         // Call Simpaisa API to initiate transaction
         // Note: OTP is automatically sent by wallet provider to customer's mobile number
         // Transaction details are returned in API response
-        // For tokenized transactions (type "9"), handle differently
-        $tokenizedType = config('simpaisa.transaction_types.tokenized_alt', '9');
-        $isTokenized = ($data['transactionType'] ?? '') === $tokenizedType;
         
-        // Keep transactionType as-is (Simpaisa expects "0" not "00" based on error response)
-        $transactionType = $data['transactionType'] ?? '';
+        // Always use one-time payment (transactionType = "0")
+        // Override any other transaction type to ensure one-time payment
+        $transactionType = '0';
         
         // Amount format - Simpaisa API expects amount in PKR (not paisa)
         // Send amount as-is without conversion
-        $amount = null;
-        if (!$isTokenized) {
-            // Regular transactions: use amount as-is (PKR)
-            $amount = isset($data['amount']) ? (int) round($data['amount']) : null;
-        } else {
-            // Tokenized transactions: only include amount if productId is not provided
-            if (empty($data['productId'] ?? null) && isset($data['amount'])) {
-                $amount = (int) round($data['amount']);
-            }
-        }
+        $amount = isset($data['amount']) ? (int) round($data['amount']) : null;
         
         $requestData = array_filter([
             'merchantId' => $data['merchantId'],
             'operatorId' => $data['operatorId'],
             'userKey' => $data['userKey'] ?? null,
-            'transactionType' => $transactionType, // Keep original format
+            'transactionType' => $transactionType, // Always "0" (one-time payment)
             'msisdn' => $data['msisdn'],
             // productReference removed - not required by Simpaisa API
             'amount' => $amount,
-            'productId' => $data['productId'] ?? null,
+            // productId removed - not needed for one-time payments
             'cnic' => $data['cnic'] ?? null,
             'accountNumber' => $data['accountNumber'] ?? null,
         ], fn($value) => $value !== null);
@@ -324,7 +313,7 @@ class SimpaisaService
             'transactionId' => $data['transactionId'] ?? null,
             'otp' => $data['otp'],
             'msisdn' => $data['msisdn'],
-            'transactionType' => $data['transactionType'] ?? null,
+            'transactionType' => '0', // Always one-time payment
             'cnic' => $data['cnic'] ?? null,
             'accountNumber' => $data['accountNumber'] ?? null,
         ], fn($value) => $value !== null);
@@ -505,7 +494,7 @@ class SimpaisaService
             'sourceId' => $data['sourceId'],
             'productId' => $data['productId'] ?? null,
             'userKey' => $data['userKey'] ?? null,
-            'transactionType' => $data['transactionType'] ?? null,
+            'transactionType' => '0', // Always one-time payment
             'amount' => $data['amount'] ?? null,
         ], fn($value) => $value !== null);
 

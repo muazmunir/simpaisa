@@ -81,8 +81,12 @@ class SimpaisaHttpClient
         $baseUrl = config('simpaisa.base_url');
         $url = rtrim($baseUrl, '/') . '/' . ltrim($endpoint, '/');
 
-        // Sign the request if enabled
-        if (config('simpaisa.rsa.sign_requests', true)) {
+        // Sign the request only for disbursement (payout) endpoints, not for wallet (payment) endpoints
+        $isDisbursementEndpoint = strpos($endpoint, 'disbursements') !== false;
+        $isWalletEndpoint = strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false;
+        
+        // Only sign disbursement endpoints, skip signature for wallet endpoints
+        if ($isDisbursementEndpoint && config('simpaisa.rsa.sign_requests', true)) {
             try {
                 // For disbursement endpoints, sign only the 'request' object, not the top-level structure
                 // Structure: { "request": {...}, "signature": "..." }
@@ -91,7 +95,7 @@ class SimpaisaHttpClient
                     // Sign only the request object for disbursement endpoints
                     $dataToSign = $data['request'];
                 }
-
+                
                 $signature = $this->rsaService->signRequest($dataToSign);
                 $data['signature'] = $signature;
             } catch (\Exception $e) {
@@ -226,8 +230,12 @@ class SimpaisaHttpClient
         $baseUrl = config('simpaisa.base_url');
         $url = rtrim($baseUrl, '/') . '/' . ltrim($endpoint, '/');
 
-        // Sign the request if enabled
-        if (config('simpaisa.rsa.sign_requests', true)) {
+        // Sign the request only for disbursement (payout) endpoints, not for wallet (payment) endpoints
+        $isDisbursementEndpoint = strpos($endpoint, 'disbursements') !== false;
+        $isWalletEndpoint = strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false;
+        
+        // Only sign disbursement endpoints, skip signature for wallet endpoints
+        if ($isDisbursementEndpoint && config('simpaisa.rsa.sign_requests', true)) {
             try {
                 $signature = $this->rsaService->signRequest($queryParams);
                 $queryParams['signature'] = $signature;
