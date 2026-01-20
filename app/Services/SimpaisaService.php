@@ -136,6 +136,28 @@ class SimpaisaService
 
         $response = $this->httpClient->post('v2/wallets/transaction/initiate', $requestData);
         
+        // Log response to check if OTP is included
+        Log::info('Simpaisa Initiate Transaction Response', [
+            'response' => $response,
+            'has_otp' => isset($response['otp']) || isset($response['OTP']),
+        ]);
+        
+        // Preserve OTP from Simpaisa API response if available
+        // OTP field can be 'otp' or 'OTP' (case-insensitive)
+        $otp = $response['otp'] ?? $response['OTP'] ?? null;
+        
+        // If OTP is in response, ensure it's included in standard format
+        if ($otp !== null) {
+            $response['otp'] = $otp;
+            // Remove duplicate if exists with different case
+            unset($response['OTP']);
+        } else {
+            // If OTP not in response, it means OTP was sent to customer's mobile
+            // Add indication that OTP has been sent
+            $response['otp'] = 'sent';
+            $response['otpMessage'] = 'OTP has been sent to customer mobile number: ' . ($data['msisdn'] ?? '');
+        }
+        
         return $response;
     }
 
