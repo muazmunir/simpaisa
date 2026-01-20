@@ -121,13 +121,16 @@ class SimpaisaService
         // Send amount as-is without conversion
         $amount = isset($data['amount']) ? (int) round($data['amount']) : null;
         
+        // Add productReference with default value (as per HighTribe implementation)
+        $productReference = $data['productReference'] ?? config('simpaisa.default_product_reference', 'default-product-reference');
+        
         $requestData = array_filter([
             'merchantId' => $data['merchantId'],
             'operatorId' => $data['operatorId'],
             'userKey' => $data['userKey'] ?? null,
             'transactionType' => $transactionType, // Always "0" (one-time payment)
             'msisdn' => $data['msisdn'],
-            // productReference removed - not required by Simpaisa API
+            'productReference' => $productReference, // Added back as per HighTribe implementation
             'amount' => $amount,
             // productId removed - not needed for one-time payments
             'cnic' => $data['cnic'] ?? null,

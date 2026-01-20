@@ -36,6 +36,17 @@ return [
     |
     */
 
+    // Base URL for payin (wallet transactions)
+    'base_url_payin' => env('SIMPaisa_BASE_URL_PAYIN', (env('SIMPaisa_MODE', 'sandbox') === 'production') 
+        ? 'https://wallets.simpaisa.com' 
+        : 'https://sandbox.simpaisa.com'),
+    
+    // Base URL for payout (disbursements)
+    'base_url_payout' => env('SIMPaisa_BASE_URL_PAYOUT', (env('SIMPaisa_MODE', 'sandbox') === 'production') 
+        ? 'https://disb.simpaisa.com' 
+        : 'https://sandbox.simpaisa.com'),
+    
+    // Legacy base_url (for backward compatibility)
     'base_url' => env('SIMPaisa_BASE_URL', (env('SIMPaisa_MODE', 'sandbox') === 'production') 
         ? 'https://disb.simpaisa.com' 
         : 'https://sandbox.simpaisa.com'),
@@ -50,6 +61,8 @@ return [
     */
 
     'api_key' => env('SIMPaisa_API_KEY'),
+    
+    'api_token' => env('SIMPaisa_API_TOKEN'),
 
     'merchant_id' => env('SIMPaisa_MERCHANT_ID'),
 
@@ -65,10 +78,13 @@ return [
     'headers' => [
         'Accept' => 'text/plain, application/json, application/*+json',
         'Content-Type' => 'application/json',
-        'mode' => 'payout',
+        'mode' => 'payout', // Default for payout, will be overridden for payin
         'region' => 'PK',
         'version' => '3.0',
     ],
+    
+    // Default product reference for payin transactions
+    'default_product_reference' => env('SIMPaisa_DEFAULT_PRODUCT_REFERENCE', 'default-product-reference'),
 
     /*
     |--------------------------------------------------------------------------

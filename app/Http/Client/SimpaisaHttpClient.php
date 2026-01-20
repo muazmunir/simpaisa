@@ -78,7 +78,12 @@ class SimpaisaHttpClient
      */
     public function post(string $endpoint, array $data): array
     {
-        $baseUrl = config('simpaisa.base_url');
+        // Use different base URL for payin (wallet) vs payout (disbursement)
+        $isWalletEndpoint = strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false;
+        $baseUrl = $isWalletEndpoint 
+            ? config('simpaisa.base_url_payin', config('simpaisa.base_url'))
+            : config('simpaisa.base_url_payout', config('simpaisa.base_url'));
+        
         $url = rtrim($baseUrl, '/') . '/' . ltrim($endpoint, '/');
 
         // Sign the request only for disbursement (payout) endpoints, not for wallet (payment) endpoints
@@ -122,12 +127,24 @@ class SimpaisaHttpClient
         try {
             // Get required headers from config
             $headers = config('simpaisa.headers', []);
-
-            // For wallet transactions, try removing mode header completely
-            // "Invalid-Flow" error suggests mode header might be causing issues
-            if (strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false) {
-                // Try removing mode header - Simpaisa might not need it for wallet transactions
-                unset($headers['mode']);
+            
+            // For wallet (payin) transactions, set mode to 'payin' and add api-token
+            $isWalletEndpoint = strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false;
+            
+            if ($isWalletEndpoint) {
+                $headers['mode'] = 'payin';
+                // Add api-token if available (for payin transactions)
+                $apiToken = config('simpaisa.api_token');
+                if ($apiToken) {
+                    $headers['api-token'] = $apiToken;
+                }
+                // Add operatorId dynamically from payload if available
+                if (isset($data['operatorId'])) {
+                    $headers['operatorId'] = $data['operatorId'];
+                }
+            } else {
+                // For disbursement (payout) transactions, keep mode as 'payout'
+                $headers['mode'] = 'payout';
             }
 
             Log::info('Simpaisa Request', [
@@ -227,7 +244,12 @@ class SimpaisaHttpClient
      */
     public function get(string $endpoint, array $queryParams = []): array
     {
-        $baseUrl = config('simpaisa.base_url');
+        // Use different base URL for payin (wallet) vs payout (disbursement)
+        $isWalletEndpoint = strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false;
+        $baseUrl = $isWalletEndpoint 
+            ? config('simpaisa.base_url_payin', config('simpaisa.base_url'))
+            : config('simpaisa.base_url_payout', config('simpaisa.base_url'));
+        
         $url = rtrim($baseUrl, '/') . '/' . ltrim($endpoint, '/');
 
         // Sign the request only for disbursement (payout) endpoints, not for wallet (payment) endpoints
@@ -251,6 +273,23 @@ class SimpaisaHttpClient
         try {
             // Get required headers from config
             $headers = config('simpaisa.headers', []);
+            
+            // For wallet (payin) transactions, set mode to 'payin' and add api-token
+            if ($isWalletEndpoint) {
+                $headers['mode'] = 'payin';
+                // Add api-token if available (for payin transactions)
+                $apiToken = config('simpaisa.api_token');
+                if ($apiToken) {
+                    $headers['api-token'] = $apiToken;
+                }
+                // Add operatorId dynamically from query params if available
+                if (isset($queryParams['operatorId'])) {
+                    $headers['operatorId'] = $queryParams['operatorId'];
+                }
+            } else {
+                // For disbursement (payout) transactions, keep mode as 'payout'
+                $headers['mode'] = 'payout';
+            }
             
             // Make HTTP request with headers
             /** @var Response $response */
