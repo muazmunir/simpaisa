@@ -41,5 +41,5 @@ Route::prefix('disbursements')->group(function () {
     Route::post('/fetch-account', [\App\Http\Controllers\DisbursementController::class, 'fetchAccount']);
     Route::post('/initiate', [\App\Http\Controllers\DisbursementController::class, 'initiateDisbursement']);
     Route::put('/initiate', [\App\Http\Controllers\DisbursementController::class, 'updateDisbursement']);
-    Route::post('/', [\App\Http\Controllers\DisbursementController::class, 'listDisbursements'])->middleware(\App\Http\Middleware\VerifySimpaisaSignature::class);
+    Route::post('/', [\App\Http\Controllers\DisbursementController::class, 'listDisbursements']);
 });
