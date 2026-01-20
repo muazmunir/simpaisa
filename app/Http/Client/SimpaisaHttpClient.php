@@ -50,7 +50,7 @@ class SimpaisaHttpClient
 
         // Set verify option
         $verifyPeer = config('simpaisa.ssl.verify_peer', false);
-        
+
         if ($hasCaCert) {
             // Use CA cert bundle if provided
             $options['verify'] = $caCertPath;
@@ -91,13 +91,15 @@ class SimpaisaHttpClient
                     // Sign only the request object for disbursement endpoints
                     $dataToSign = $data['request'];
                 }
-                
+
                 $signature = $this->rsaService->signRequest($dataToSign);
                 $data['signature'] = $signature;
             } catch (\Exception $e) {
                 // In development, if key file is missing, log warning but continue
-                if (app()->environment(['local', 'testing']) && 
-                    (strpos($e->getMessage(), 'not found') !== false || strpos($e->getMessage(), 'file not found') !== false)) {
+                if (
+                    app()->environment(['local', 'testing']) &&
+                    (strpos($e->getMessage(), 'not found') !== false || strpos($e->getMessage(), 'file not found') !== false)
+                ) {
                     Log::warning('RSA key file not found in development mode. Request will be sent without signature.', [
                         'error' => $e->getMessage(),
                         'endpoint' => $endpoint
@@ -116,24 +118,18 @@ class SimpaisaHttpClient
         try {
             // Get required headers from config
             $headers = config('simpaisa.headers', []);
-            
+
             // For wallet transactions, try removing mode header completely
             // "Invalid-Flow" error suggests mode header might be causing issues
             if (strpos($endpoint, 'wallets') !== false || strpos($endpoint, 'inquire') !== false) {
                 // Try removing mode header - Simpaisa might not need it for wallet transactions
                 unset($headers['mode']);
             }
-            
-            // Log base URL and payload for register customer endpoint
-            if (strpos($endpoint, 'register-customer') !== false) {
-                Log::info('Simpaisa Register Customer Request', [
-                    'base_url' => $baseUrl,
-                    'full_url' => $url,
-                    'endpoint' => $endpoint,
-                    'payload' => $data,
-                    'payload_json' => json_encode($data, JSON_PRETTY_PRINT),
-                ]);
-            }
+
+            Log::info('Simpaisa Request', [
+                'full_url' => $url,
+                'payload_json' => json_encode($data, JSON_PRETTY_PRINT),
+            ]);
             
             // Make HTTP request with headers
             /** @var Response $response */
@@ -156,9 +152,9 @@ class SimpaisaHttpClient
                 try {
                     $signature = $responseData['signature'];
                     unset($responseData['signature']);
-                    
+
                     $isValid = $this->rsaService->verifyResponse($responseData, $signature);
-                    
+
                     if (!$isValid) {
                         Log::warning('Invalid response signature from Simpaisa', [
                             'endpoint' => $endpoint,
@@ -206,7 +202,6 @@ class SimpaisaHttpClient
             // Return response data (even if it contains error status in response body)
             // The calling service should check the response.status field
             return $responseData ?? [];
-
         } catch (\Exception $e) {
             Log::error('Simpaisa API Request Error', [
                 'url' => $url,
@@ -269,9 +264,9 @@ class SimpaisaHttpClient
             if (config('simpaisa.rsa.verify_response_signature', true) && isset($responseData['signature'])) {
                 $signature = $responseData['signature'];
                 unset($responseData['signature']);
-                
+
                 $isValid = $this->rsaService->verifyResponse($responseData, $signature);
-                
+
                 if (!$isValid) {
                     Log::warning('Invalid response signature from Simpaisa', [
                         'endpoint' => $endpoint,
@@ -284,7 +279,6 @@ class SimpaisaHttpClient
             }
 
             return $responseData ?? [];
-
         } catch (\Exception $e) {
             Log::error('Simpaisa API Request Error', [
                 'url' => $url,
@@ -305,13 +299,13 @@ class SimpaisaHttpClient
     protected function sanitizeLogData(array $data): array
     {
         $sensitiveFields = ['signature', 'otp', 'api_secret', 'private_key'];
-        
+
         foreach ($sensitiveFields as $field) {
             if (isset($data[$field])) {
                 $data[$field] = '***REDACTED***';
             }
         }
-        
+
         return $data;
     }
 }
