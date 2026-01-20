@@ -887,11 +887,13 @@ class SimpaisaService
             }
 
             // Call Simpaisa API to register customer
+            // Endpoint format: /merchants/{merchantId}/disbursements/register-customer
+            $endpoint = "merchants/{$merchantId}/disbursements/register-customer";
             $requestData = [
                 'request' => $data
             ];
 
-            $response = $this->httpClient->post('api/disbursements/register-customer', $requestData);
+            $response = $this->httpClient->post($endpoint, $requestData);
 
             // Return response from Simpaisa API
             return $response;
@@ -970,11 +972,13 @@ class SimpaisaService
             }
 
             // Call Simpaisa API to update customer
+            // Endpoint format: /merchants/{merchantId}/disbursements/update-customer
+            $endpoint = "merchants/{$merchantId}/disbursements/update-customer";
             $requestData = [
                 'request' => $data
             ];
 
-            $response = $this->httpClient->post('api/disbursements/update-customer', $requestData);
+            $response = $this->httpClient->post($endpoint, $requestData);
 
             // Return response from Simpaisa API
             return $response;
@@ -1033,12 +1037,12 @@ class SimpaisaService
             }
 
             // Call Simpaisa API to fetch customer by reference
+            // Endpoint format: /merchants/{merchantId}/disbursements/customer?reference={reference}
+            $endpoint = "merchants/{$merchantId}/disbursements/customer";
             $queryParams = [
-                'merchantId' => $merchantId,
                 'reference' => $reference
             ];
-
-            $response = $this->httpClient->get('api/disbursements/customer', $queryParams);
+            $response = $this->httpClient->get($endpoint, $queryParams);
 
             // Return response from Simpaisa API
             // Log the response
@@ -1095,13 +1099,9 @@ class SimpaisaService
             }
 
             // Call Simpaisa API to fetch banks list
-            $queryParams = [
-                'merchantId' => $merchantId
-            ];
-
-            // Try different endpoint variations
-            // Common patterns: api/disbursements/banks, disbursements/banks, api/disbursements/bank-list
-            $response = $this->httpClient->get('api/disbursements/banks', $queryParams);
+            // Endpoint format: /merchants/{merchantId}/disbursements/banks
+            $endpoint = "merchants/{$merchantId}/disbursements/banks";
+            $response = $this->httpClient->get($endpoint, []);
 
             // Log the response
             Log::info('Simpaisa Fetch Banks Response', [
@@ -1156,11 +1156,9 @@ class SimpaisaService
             }
 
             // Call Simpaisa API to fetch real-time balance data
-            $queryParams = [
-                'merchantId' => $merchantId
-            ];
-
-            $response = $this->httpClient->get('api/disbursements/balance', $queryParams);
+            // Endpoint format: /merchants/{merchantId}/disbursements/balance
+            $endpoint = "merchants/{$merchantId}/disbursements/balance";
+            $response = $this->httpClient->get($endpoint, []);
 
             // Log the response
             Log::info('Simpaisa Fetch Balance Data Response', [
@@ -1215,11 +1213,9 @@ class SimpaisaService
             }
 
             // Call Simpaisa API to fetch reasons list
-            $queryParams = [
-                'merchantId' => $merchantId
-            ];
-
-            $response = $this->httpClient->get('api/disbursements/reasons', $queryParams);
+            // Endpoint format: /merchants/{merchantId}/disbursements/reasons
+            $endpoint = "merchants/{$merchantId}/disbursements/reasons";
+            $response = $this->httpClient->get($endpoint, []);
 
             // Log the response
             Log::info('Simpaisa Fetch Reasons Response', [
@@ -1306,7 +1302,11 @@ class SimpaisaService
                 $queryParams['state'] = $state;
             }
 
-            $response = $this->httpClient->get('api/disbursements', $queryParams);
+            // Endpoint format: /merchants/{merchantId}/disbursements
+            $endpoint = "merchants/{$merchantId}/disbursements";
+            // Remove merchantId from query params as it's now in URL path
+            unset($queryParams['merchantId']);
+            $response = $this->httpClient->get($endpoint, $queryParams);
 
             // Log the response
             Log::info('Simpaisa List Disbursements Response', [
@@ -1376,11 +1376,13 @@ class SimpaisaService
             // 3. Return account title, bank title, and IBAN
 
             // Call Simpaisa API to fetch account title information
+            // Endpoint format: /merchants/{merchantId}/disbursements/fetch-account-title
+            $endpoint = "merchants/{$merchantId}/disbursements/fetch-account-title";
             $requestData = [
                 'request' => $data
             ];
 
-            $response = $this->httpClient->post('api/disbursements/fetch-account-title', $requestData);
+            $response = $this->httpClient->post($endpoint, $requestData);
 
             // Log the response
             Log::info('Simpaisa Fetch Account Title Response', [
@@ -1457,11 +1459,13 @@ class SimpaisaService
             // }
 
             // Call Simpaisa API to initiate disbursement
+            // Endpoint format: /merchants/{merchantId}/disbursements/initiate
+            $endpoint = "merchants/{$merchantId}/disbursements/initiate";
             $requestData = [
                 'request' => $data
             ];
 
-            $response = $this->httpClient->post('api/disbursements/initiate', $requestData);
+            $response = $this->httpClient->post($endpoint, $requestData);
 
             // Log the response
             Log::info('Simpaisa Initiate Disbursement Response', [
@@ -1533,11 +1537,13 @@ class SimpaisaService
             // }
 
             // Call Simpaisa API to re-initiate disbursement
+            // Endpoint format: /merchants/{merchantId}/disbursements/re-initiate
+            $endpoint = "merchants/{$merchantId}/disbursements/re-initiate";
             $requestData = [
                 'request' => $data
             ];
 
-            $response = $this->httpClient->post('api/disbursements/re-initiate', $requestData);
+            $response = $this->httpClient->post($endpoint, $requestData);
 
             // Log the response
             Log::info('Simpaisa Re-initiate Disbursement Response', [
@@ -1625,11 +1631,13 @@ class SimpaisaService
             // }
 
             // Call Simpaisa API to update disbursement
+            // Endpoint format: /merchants/{merchantId}/disbursements/update
+            $endpoint = "merchants/{$merchantId}/disbursements/update";
             $requestData = [
                 'request' => $data
             ];
 
-            $response = $this->httpClient->post('api/disbursements/update', $requestData);
+            $response = $this->httpClient->post($endpoint, $requestData);
 
             // Log the response
             Log::info('Simpaisa Update Disbursement Response', [
