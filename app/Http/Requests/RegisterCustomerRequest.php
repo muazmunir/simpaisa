@@ -24,7 +24,8 @@ class RegisterCustomerRequest extends FormRequest
         return [
             // Top-level structure
             'request' => ['required', 'array'],
-            'signature' => ['required', 'string'],
+            // Signature is optional - it will be automatically generated if not provided
+            'signature' => ['nullable', 'string'],
             
             // Request fields
             'request.reference' => ['required', 'string', 'max:45'],
@@ -131,8 +132,8 @@ class RegisterCustomerRequest extends FormRequest
      * 
      * @return string
      */
-    public function getSignature(): string
+    public function getSignature(): ?string
     {
-        return $this->validated()['signature'];
+        return $this->validated()['signature'] ?? null;
     }
 }
