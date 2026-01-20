@@ -182,18 +182,23 @@ return [
 
     'ssl' => [
         // Path to client certificate (for mutual SSL)
-        'client_certificate_path' => env('SIMPaisa_SSL_CLIENT_CERT_PATH', storage_path('app/ssl/client_cert.pem')),
+        // Leave empty or null if SSL files are not available
+        'client_certificate_path' => env('SIMPaisa_SSL_CLIENT_CERT_PATH', null),
         
         // Path to client private key (for mutual SSL)
-        'client_private_key_path' => env('SIMPaisa_SSL_CLIENT_KEY_PATH', storage_path('app/ssl/client_key.pem')),
+        // Leave empty or null if SSL files are not available
+        'client_private_key_path' => env('SIMPaisa_SSL_CLIENT_KEY_PATH', null),
         
         // Path to CA certificate bundle (for verifying Simpaisa's certificate)
-        'ca_certificate_path' => env('SIMPaisa_SSL_CA_CERT_PATH', storage_path('app/ssl/ca_cert.pem')),
+        // Leave empty or null if SSL files are not available
+        'ca_certificate_path' => env('SIMPaisa_SSL_CA_CERT_PATH', null),
         
-        // Verify peer certificate
-        'verify_peer' => env('SIMPaisa_SSL_VERIFY_PEER', true),
+        // Verify peer certificate (disabled by default)
+        // Set to true in production when SSL certificates are available
+        'verify_peer' => env('SIMPaisa_SSL_VERIFY_PEER', false),
         
-        // Verify peer name
-        'verify_peer_name' => env('SIMPaisa_SSL_VERIFY_PEER_NAME', true),
+        // Verify peer name (disabled by default)
+        // Set to true in production when SSL certificates are available
+        'verify_peer_name' => env('SIMPaisa_SSL_VERIFY_PEER_NAME', false),
     ],
 ];
